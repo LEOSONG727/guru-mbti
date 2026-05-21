@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.guru_portfolios (
     value_usd BIGINT,                    -- Total value in USD
     change_type VARCHAR(20) NOT NULL,    -- '신규', '추가', '축소', '유지', '청산'
     change_percent NUMERIC(8, 2),        -- Quarter-over-quarter change percentage
+    reported_price NUMERIC(10, 2),       -- Reported price of the stock (e.g. 152.34)
     is_teaser BOOLEAN DEFAULT FALSE,     -- True if it's the teaser ticker (visible to non-users)
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

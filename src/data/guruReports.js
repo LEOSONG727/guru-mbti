@@ -1,4 +1,6 @@
 // GURU-MBTI Individual 13F Reports & Fallback Essays
+import { GURUS_LIST } from "./gurusList.js";
+
 export const GURU_REPORTS = {
   "warren-buffett": {
     hasChanges: true,
@@ -2825,40 +2827,117 @@ export const GURU_REPORTS = {
   },
 };
 
-export function getGuruReport(guruId) {
-  if (GURU_REPORTS[guruId]) {
-    return GURU_REPORTS[guruId];
+export function getGuruReport(guruId, dbGuru = null) {
+  const baseReport = GURU_REPORTS[guruId] || {};
+
+  if (baseReport.teaserTicker && baseReport.premiumHoldings) {
+    return baseReport;
   }
-  return {
-    hasChanges: true,
-    firm: "Wall Street Capital",
-    quarter: "2026년 1분기 13F",
-    filingDate: "2026.05.15",
-    teaserTicker: {
-      ticker: "MSFT",
-      name: "Microsoft Corp.",
-      weight: 9.2,
-      change: "유지",
-      reason: "글로벌 IT 생태계와 클라우드 마켓에서의 견고한 소프트웨어 패권"
-    },
-    premiumHoldings: [
-      { ticker: "GOOGL", name: "Alphabet Inc.", weight: 7.4, change: "+5%", reason: "AI 검색 고도화 및 광고 마켓 점유율 수성" },
-      { ticker: "AMZN", name: "Amazon.com Inc.", weight: 6.1, change: "유지", reason: "AWS 클라우드 이익 회복 및 물류 지배력" }
-    ],
-    sectorMix: [
-      { name: "정보기술", value: 45, color: "#3F5BFF" },
-      { name: "소비재", value: 30, color: "#0EA5E9" },
-      { name: "금융", value: 15, color: "#10B981" },
+
+  // Find guru details in GURUS_LIST or use dbGuru
+  const guru = dbGuru || GURUS_LIST.find(g => g.id === guruId) || {
+    nameKr: "알 수 없는 거장",
+    firmName: "Wall Street Capital",
+    mbtiType: "FCVS"
+  };
+
+  const isGrowth = (guru.mbtiType || "").includes("G") || (guru.mbtiType || "").includes("T");
+  const isMacro = (guru.mbtiType || "").includes("M");
+
+  let teaserTicker, premiumHoldings, sectorMix, bearCase, actionPlan;
+
+  if (isGrowth) {
+    teaserTicker = {
+      ticker: "NVDA",
+      name: "NVIDIA Corp. (엔비디아)",
+      weight: 14.5,
+      change: "추가 (+12%)",
+      reason: "글로벌 AI 반도체 칩 시장 독점 및 공급망 강화 수혜"
+    };
+    premiumHoldings = [
+      { ticker: "MSFT", name: "Microsoft Corp. (마이크로소프트)", weight: 12.2, change: "유지", reason: "생성형 AI 생태계 및 대규모 클라우드 시장 장악" },
+      { ticker: "AAPL", name: "Apple Inc. (애플)", weight: 9.8, change: "유지", reason: "소비자 하드웨어 락인 장벽 및 강력한 자사주 매입" },
+      { ticker: "GOOGL", name: "Alphabet Inc. (구글)", weight: 8.5, change: "추가 (+5%)", reason: "디지털 광고 검색 해자 및 생성형 AI 도구 확장성" }
+    ];
+    sectorMix = [
+      { name: "정보기술", value: 65, color: "#3F5BFF" },
+      { name: "소비재/유통", value: 25, color: "#0EA5E9" },
+      { name: "금융/기타", value: 10, color: "#94A3B8" }
+    ];
+    bearCase = [
+      "인플레이션에 따른 밸류에이션 부담 및 대형 IT 플랫폼 독과점 규제 리스크",
+      "AI 감가상각 비용 증대에 따른 빅테크 단기 마진 하락 우려"
+    ];
+    actionPlan = [
+      { title: "성장 속도 추적", detail: "핵심 빅테크 기업들의 분기별 어닝 콜 마진 추이와 재투자 기회 추적" },
+      { title: "현금 비중 리밸런싱", detail: "고성장 국면 이후 조정 가능성을 대비해 점진적으로 배당형 자산 분산" }
+    ];
+  } else if (isMacro) {
+    teaserTicker = {
+      ticker: "GLD",
+      name: "SPDR Gold Shares (금 ETF)",
+      weight: 18.5,
+      change: "추가 (+15%)",
+      reason: "지정학 위기 장기화 및 화폐 인플레이션 헤지를 위한 대체 실물자산 편입"
+    };
+    premiumHoldings = [
+      { ticker: "OXY", name: "Occidental Petroleum (옥시덴탈)", weight: 12.4, change: "유지", reason: "에너지 인프라 가치 상승 및 셰일 오일 생산 효율 증대" },
+      { ticker: "SPY", name: "SPDR S&P 500 ETF Trust", weight: 10.2, change: "유지", reason: "거시 미국 경제 전반의 장기 복리 수익률 추종 목적 보유" },
+      { ticker: "XLE", name: "Energy Select Sector SPDR", weight: 7.5, change: "추가 (+8%)", reason: "원유 및 정유 업종의 마진과 고배당 수익 확보" }
+    ];
+    sectorMix = [
+      { name: "원자재/에너지", value: 55, color: "#10B981" },
+      { name: "금융/지수", value: 35, color: "#3F5BFF" },
       { name: "기타", value: 10, color: "#94A3B8" }
-    ],
-    trendData: [20, 22, 21, 23, 25, 24, 26, 28, 27, 29, 31, 30],
-    bearCase: [
-      "빅테크 반독점 소송 장기화에 따른 비용 유출 및 영업 제한 리스크",
-      "AI 연산 서버 감가상각 비용 급증 시 단기 마진 하락 우려",
-      "금리 장기 고공 행진에 의한 성장 밸류에이션 멀티플 조정 압박"
-    ],
-    actionPlan: [
-      { title: "포트폴리오의 대형 빅테크 밸런스 유지", detail: "핵심 기술 중심 기업들의 실적 안정성을 보고 분기 배분 리밸런싱." }
-    ]
+    ];
+    bearCase = [
+      "글로벌 지정학 위기 완화 및 실질금리 상승에 따른 금 자산 단기 급락 위험",
+      "에너지 경기 사이클 하강 시 원유 관련 자산 가치 훼손 리스크"
+    ];
+    actionPlan = [
+      { title: "원자재 변동성 모니터링", detail: "달러화 인덱스 및 지정학 리스크 변곡점에 맞춰 금/에너지 비중 조절" },
+      { title: "배당 가치 자산 혼합", detail: "매크로 하방 방어를 위해 인프라/리츠 등 고배당 자산 다변화" }
+    ];
+  } else {
+    // Value (V) / Traditional Safe assets
+    teaserTicker = {
+      ticker: "BRK.B",
+      name: "Berkshire Hathaway B (버크셔)",
+      weight: 15.2,
+      change: "유지",
+      reason: "워렌 버핏의 안전한 현금 배분 능력 및 포트폴리오의 든든한 중심 역할"
+    };
+    premiumHoldings = [
+      { ticker: "JPM", name: "JPMorgan Chase & Co. (제이피모건)", weight: 10.4, change: "추가 (+3%)", reason: "미국 최고 은행의 여수신 독점 마진 및 고금리 장기화 수혜" },
+      { ticker: "KO", name: "Coca-Cola Co. (코카콜라)", weight: 8.8, change: "유지", reason: "안정적 필수 소비재 지배력 및 탁월한 인플레이션 가격 인상력" },
+      { ticker: "PG", name: "Procter & Gamble Co. (피앤지)", weight: 7.2, change: "유지", reason: "불황에도 흔들리지 않는 필수 소비재 및 탄탄한 분기 배당 역사" }
+    ];
+    sectorMix = [
+      { name: "금융", value: 45, color: "#3F5BFF" },
+      { name: "필수소비재", value: 35, color: "#10B981" },
+      { name: "정보기술/기타", value: 20, color: "#94A3B8" }
+    ];
+    bearCase = [
+      "전통 소비재 브랜드 세대 교체에 따른 장기 마케팅 비효율 발생 가능성",
+      "장기 금리 하락 시 대형 은행의 예대마진 및 이자 수익성 둔화 우려"
+    ];
+    actionPlan = [
+      { title: "대차대조표 건강성 검증", detail: "소비 패턴 둔화 시에도 안전마진을 확보할 수 있는 고부채 회피형 검증" },
+      { title: "복리 배당 재투자 전략", detail: "배당금을 고성장 신규 소외 자산에 재배치하여 복리 효율 극대화" }
+    ];
+  }
+
+  return {
+    hasChanges: baseReport.hasChanges !== undefined ? baseReport.hasChanges : true,
+    firm: baseReport.firm || guru.firmName || "Wall Street Capital",
+    quarter: baseReport.quarter || "2026년 1분기 13F",
+    filingDate: baseReport.filingDate || "2026.05.15",
+    essay: baseReport.essay,
+    teaserTicker: baseReport.teaserTicker || teaserTicker,
+    premiumHoldings: baseReport.premiumHoldings || premiumHoldings,
+    sectorMix: baseReport.sectorMix || sectorMix,
+    trendData: baseReport.trendData || [20, 22, 21, 23, 25, 24, 26, 28, 27, 29, 31, 30],
+    bearCase: baseReport.bearCase || bearCase,
+    actionPlan: baseReport.actionPlan || actionPlan
   };
 }

@@ -35,6 +35,8 @@ export function Icon({ name, size = 20, className = "", strokeWidth = 2 }) {
     "alert-triangle": Icons.AlertTriangle,
     "chevron-left": Icons.ChevronLeft,
     "chevron-right": Icons.ChevronRight,
+    "chevron-down": Icons.ChevronDown,
+    "chevron-up": Icons.ChevronUp,
     "lock": Icons.Lock,
     "check": Icons.Check,
     "crown": Icons.Crown,
@@ -65,6 +67,75 @@ export function Icon({ name, size = 20, className = "", strokeWidth = 2 }) {
 function axisLabel(axis) {
   return ({ MF: "거시 vs 기업분석", TC: "추세 vs 역발상", GV: "성장 vs 가치", SA: "집중 vs 분산" })[axis];
 }
+
+// Render dynamic colored badge for portfolio changes
+export function renderActivityBadge(change, size = "sm") {
+  if (!change || change === "유지") {
+    return (
+      <span className={`font-bold text-slate-400 bg-slate-50 border border-slate-200/50 px-2.5 py-0.5 rounded-lg ${size === "lg" ? "text-[13px] px-3 py-1" : "text-[11px]"}`}>
+        유지
+      </span>
+    );
+  }
+
+  const isReduce = change.includes("축소") || change.includes("청산") || change.startsWith("Reduce") || change.includes("-");
+  const isAdd = change.includes("추가") || change.includes("확대") || change.startsWith("Add") || change.includes("+");
+  const isNew = change.includes("신규") || change === "New";
+
+  if (isReduce) {
+    return (
+      <span className={`font-extrabold text-rose-600 bg-rose-50 border border-rose-200/40 px-2.5 py-0.5 rounded-lg ${size === "lg" ? "text-[13px] px-3 py-1" : "text-[11px]"}`}>
+        {change}
+      </span>
+    );
+  }
+  if (isAdd) {
+    return (
+      <span className={`font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200/40 px-2.5 py-0.5 rounded-lg ${size === "lg" ? "text-[13px] px-3 py-1" : "text-[11px]"}`}>
+        {change}
+      </span>
+    );
+  }
+  if (isNew) {
+    return (
+      <span className={`font-extrabold text-blue-600 bg-blue-50 border border-blue-200/40 px-2.5 py-0.5 rounded-lg ${size === "lg" ? "text-[13px] px-3 py-1" : "text-[11px]"}`}>
+        {change}
+      </span>
+    );
+  }
+
+  return (
+    <span className={`font-bold text-slate-400 bg-slate-50 border border-slate-200/50 px-2.5 py-0.5 rounded-lg ${size === "lg" ? "text-[13px] px-3 py-1" : "text-[11px]"}`}>
+      {change}
+    </span>
+  );
+}
+
+// TICKER_SECTOR_MAP & SECTOR_COLORS DEFINITION
+const TICKER_SECTOR_MAP = {
+  'AAPL': '정보기술', 'MSFT': '정보기술', 'GOOGL': '정보기술', 'GOOG': '정보기술', 'META': '정보기술',
+  'NVDA': '정보기술', 'TSM': '정보기술', 'AVGO': '정보기술', 'AMD': '정보기술', 'PLTR': '정보기술',
+  'SHOP': '정보기술', 'MELI': '정보기술', 'NFLX': '정보기술', 'CRM': '정보기술', 'SONY': '정보기술',
+  'AXP': '금융', 'BAC': '금융', 'BRK.B': '금융', 'BRK.A': '금융', 'EWBC': '금융', 'CB': '금융',
+  'SPY': '금융', 'IVV': '금융', 'VOO': '금융', 'QQQ': '금융', 'GS': '금융', 'JPM': '금융',
+  'MS': '금융', 'MA': '금융', 'V': '금융', 'MCO': '금융', 'SPGI': '금융',
+  'KO': '소비재', 'AMZN': '소비재', 'QSR': '소비재', 'PEP': '소비재', 'WMT': '소비재', 'COST': '소비재',
+  'NKE': '소비재', 'TSLA': '소비재', 'PG': '소비재', 'EL': '소비재', 'CMG': '소비재', 'HLT': '소비재',
+  'DIS': '소비재', 'MAR': '소비재', 'SYY': '소비재',
+  'CRSP': '헬스케어', 'INSM': '헬스케어', 'NTRA': '헬스케어', 'LLY': '헬스케어', 'NVO': '헬스케어',
+  'JNJ': '헬스케어', 'PFE': '헬스케어', 'MRK': '헬스케어', 'SYK': '헬스케어', 'WAT': '헬스케어',
+  'CVX': '에너지', 'OXY': '에너지', 'VALE': '에너지', 'XOM': '에너지', 'COP': '에너지',
+  'CEIX': '에너지', 'AMR': '에너지', 'GE': '에너지'
+};
+
+const SECTOR_COLORS = {
+  '정보기술': '#10B981',
+  '금융': '#4F46E5',
+  '소비재': '#F59E0B',
+  '헬스케어': '#EC4899',
+  '에너지': '#EF4444',
+  '기타': '#6B7280'
+};
 
 // ─────────────────────────────────────────
 // CUSTOM DATA HOOK: DYNAMIC SUPABASE DATA FETCHING
@@ -133,17 +204,47 @@ function useSupabaseData(resultCode) {
           tickerCounts[p.ticker].totalWeight += Number(p.weight);
         });
 
+        const getChangePriority = (change) => {
+          if (!change || change === "유지") return 0;
+          return 1;
+        };
+
         const sortedOverlaps = Object.entries(tickerCounts)
           .map(([ticker, info]) => ({
             ticker,
             name: tickerNames[ticker],
             description: `집단 내 ${info.count}개 매니저 오버랩 (평균 비중 ${(info.totalWeight / info.count).toFixed(1)}%)`,
-            change: tickerChanges[ticker] || "유지"
+            change: tickerChanges[ticker] || "유지",
+            totalWeight: info.totalWeight,
+            count: info.count
           }))
-          .sort((a, b) => b.count - a.count || b.weight - a.weight)
+          .sort((a, b) => {
+            const pA = getChangePriority(a.change);
+            const pB = getChangePriority(b.change);
+            if (pA !== pB) return pB - pA;
+            if (a.count !== b.count) return b.count - a.count;
+            return b.totalWeight - a.totalWeight;
+          })
           .slice(0, 4);
 
-        const defaultSectors = [
+        const groupSectorWeights = {};
+        dbPortfolios?.forEach(p => {
+          const ticker = (p.ticker || '').toUpperCase();
+          const sector = TICKER_SECTOR_MAP[ticker] || '기타';
+          const weight = Number(p.weight) || 0;
+          groupSectorWeights[sector] = (groupSectorWeights[sector] || 0) + weight;
+        });
+        const groupTotalWeight = Object.values(groupSectorWeights).reduce((sum, w) => sum + w, 0) || 1;
+        const dynamicSectors = Object.entries(groupSectorWeights).map(([name, weight]) => {
+          const value = Math.round((weight / groupTotalWeight) * 100);
+          return {
+            name,
+            value,
+            color: SECTOR_COLORS[name] || '#6B7280'
+          };
+        }).filter(s => s.value > 0).sort((a, b) => b.value - a.value);
+
+        const finalSectors = dynamicSectors.length > 0 ? dynamicSectors : [
           { name: "금융", value: 42, color: "#4F46E5" },
           { name: "정보기술", value: 25, color: "#10B981" },
           { name: "헬스케어", value: 15, color: "#F59E0B" },
@@ -157,7 +258,7 @@ function useSupabaseData(resultCode) {
           averageCashRatio: avgCash,
           collectiveSentiment: avgCash > 20 ? "보수적 방어" : "공격적 매집",
           overlappingHoldings: sortedOverlaps,
-          groupCharts: { sectors: defaultSectors }
+          groupCharts: { sectors: finalSectors }
         };
 
         const mappedGurus = dbGurus.map(g => ({
@@ -191,7 +292,8 @@ function useSupabaseGuruReport(guruId) {
   const [state, setState] = useState({
     report: null,
     isLive: false,
-    loading: false
+    loading: false,
+    dbGuru: null
   });
 
   useEffect(() => {
@@ -199,6 +301,27 @@ function useSupabaseGuruReport(guruId) {
       if (!isSupabaseConfigured || !guruId) return;
       setState(s => ({ ...s, loading: true }));
       try {
+        // 1. Fetch guru metadata
+        const { data: dbGuruData, error: errGuru } = await supabase
+          .from("gurus")
+          .select("*")
+          .eq("id", guruId)
+          .maybeSingle();
+
+        let dbGuru = null;
+        if (dbGuruData) {
+          dbGuru = {
+            id: dbGuruData.id,
+            nameEn: dbGuruData.name_en,
+            nameKr: dbGuruData.name_kr,
+            firmName: dbGuruData.firm_name,
+            cik: dbGuruData.cik,
+            mbtiType: dbGuruData.mbti_type,
+            description: dbGuruData.description
+          };
+        }
+
+        // 2. Fetch portfolios and history
         const { data: dbPortfolios, error: errPortfolios } = await supabase
           .from("guru_portfolios")
           .select("*")
@@ -210,43 +333,70 @@ function useSupabaseGuruReport(guruId) {
           .eq("guru_id", guruId)
           .order("quarter", { ascending: true });
 
-        if (errPortfolios && errPortfolios.length === 0) {
-          setState({ report: null, isLive: false, loading: false });
+        if (!dbPortfolios || dbPortfolios.length === 0) {
+          setState({ report: null, isLive: false, loading: false, dbGuru });
           return;
         }
 
+        let calculatedAum = 0;
+        dbPortfolios?.forEach(p => {
+          calculatedAum += Number(p.value_usd) || 0;
+        });
+
         const teaser = dbPortfolios?.find(p => p.is_teaser);
         const premiums = dbPortfolios?.filter(p => !p.is_teaser);
-        const trendData = dbHistory?.map(h => Number(h.cash_ratio));
+        const trendData = dbHistory?.map(h => ({
+          quarter: h.quarter,
+          value: Number(h.cash_ratio)
+        }));
 
-        const sectorMix = [
-          { name: "금융", value: 45, color: "#4F46E5" },
-          { name: "정보기술", value: 30, color: "#10B981" },
-          { name: "소비재", value: 15, color: "#F59E0B" },
-          { name: "기타", value: 10, color: "#6B7280" }
-        ];
+        const reportSectorWeights = {};
+        dbPortfolios?.forEach(p => {
+          const ticker = (p.ticker || '').toUpperCase();
+          const sector = TICKER_SECTOR_MAP[ticker] || '기타';
+          const weight = Number(p.weight) || 0;
+          reportSectorWeights[sector] = (reportSectorWeights[sector] || 0) + weight;
+        });
+        const reportTotalWeight = Object.values(reportSectorWeights).reduce((sum, w) => sum + w, 0) || 1;
+        const sectorMix = Object.entries(reportSectorWeights).map(([name, weight]) => {
+          const value = Math.round((weight / reportTotalWeight) * 100);
+          return {
+            name,
+            value,
+            color: SECTOR_COLORS[name] || '#6B7280'
+          };
+        }).filter(s => s.value > 0).sort((a, b) => b.value - a.value);
 
         setState({
           report: {
             hasChanges: true,
             filingDate: "2026-05-15",
             quarter: "2026 Q1",
+            aum: calculatedAum || AUM_MAP[guruId] || 1000000000,
             teaserTicker: teaser ? {
               ticker: teaser.ticker,
               name: teaser.company_name,
               reason: `최근 분기 ${teaser.change_type} 매집`,
               change: teaser.change_type,
-              weight: teaser.weight
+              changePercent: teaser.change_percent,
+              weight: teaser.weight,
+              sharesHeld: teaser.shares_held,
+              valueUsd: teaser.value_usd,
+              reportedPrice: teaser.reported_price
             } : null,
             premiumHoldings: premiums?.map(p => ({
               ticker: p.ticker,
               name: p.company_name,
               reason: `${p.change_type} 매칭비중 ${p.weight}%`,
               change: p.change_type,
-              weight: p.weight
+              changePercent: p.change_percent,
+              weight: p.weight,
+              sharesHeld: p.shares_held,
+              valueUsd: p.value_usd,
+              reportedPrice: p.reported_price
             })),
             sectorMix,
-            trendData: trendData && trendData.length > 0 ? trendData : [5, 7, 8, 12, 15, 20, 24, 28, 30, 32, 35, 38],
+            trendData: trendData && trendData.length > 0 ? trendData : null,
             bearCase: [
               "특정 기업 및 특정 섹터군에 대한 자산 편향이 장기 방어율 훼손 가능성",
               "최근 거시경제 변곡점 부근의 방어적 현금 포지셔닝 전환 압박"
@@ -257,11 +407,12 @@ function useSupabaseGuruReport(guruId) {
             ]
           },
           isLive: true,
-          loading: false
+          loading: false,
+          dbGuru
         });
       } catch (err) {
         console.error("Supabase guru dynamic load error:", err);
-        setState({ report: null, isLive: false, loading: false });
+        setState({ report: null, isLive: false, loading: false, dbGuru: null });
       }
     }
     load();
@@ -275,7 +426,25 @@ function useSupabaseGuruReport(guruId) {
 // ─────────────────────────────────────────
 export function LandingScreen({ onStart, theme }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const [totalGuruCount, setTotalGuruCount] = useState(GURUS_LIST.length);
+
+  useEffect(() => {
+    setMounted(true);
+    async function fetchCount() {
+      if (!isSupabaseConfigured) return;
+      try {
+        const { count, error } = await supabase
+          .from("gurus")
+          .select("*", { count: "exact", head: true });
+        if (!error && count !== null) {
+          setTotalGuruCount(count);
+        }
+      } catch (err) {
+        console.error("Failed to fetch guru count in LandingScreen:", err);
+      }
+    }
+    fetchCount();
+  }, []);
 
   return (
     <div className="w-full max-w-[1100px] mx-auto px-4 py-8 md:py-16">
@@ -385,7 +554,7 @@ export function LandingScreen({ onStart, theme }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-16 md:mt-24">
         {[
           { icon: "🧬", title: "16가지 투자 스타일 분류", desc: "매크로/기업분석, 추세/역발상, 성장/가치, 집중/분산의 4축 성향 진단" },
-          { icon: "👑", title: "42인 글로벌 투자 거장 매칭", desc: "버핏, 레이 달리오, 캐시 우드 등 월가의 전설적인 42명 매니저와 직접 비교" },
+          { icon: "👑", title: `${totalGuruCount}인 글로벌 투자 거장 매칭`, desc: `버핏, 레이 달리오, 캐시 우드 등 월가의 전설적인 ${totalGuruCount}명 매니저와 직접 비교` },
           { icon: "📊", title: "2단계 정밀 분석 리포트 제공", desc: "성향이 일치하는 집단의 공통 종목(Consensus)부터 개별 13F 상세 드릴다운까지" }
         ].map((f) => (
           <div key={f.title} className="p-6 rounded-3xl border border-slate-100 shadow-sm" style={{ background: theme.surface }}>
@@ -602,9 +771,7 @@ export function ResultScreen({ result, onContinue, theme }) {
                     {consensus.overlappingHoldings[0].description}
                   </div>
                 </div>
-                <span className="text-[13px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg shrink-0">
-                  {consensus.overlappingHoldings[0].change}
-                </span>
+                {renderActivityBadge(consensus.overlappingHoldings[0].change, "lg")}
               </div>
             )}
           </div>
@@ -1070,9 +1237,7 @@ export function ReportScreen({ result, onRestart, theme }) {
                       <div className="text-[13.5px] font-bold text-slate-900">{h.name}</div>
                       <div className="text-[11.5px] text-slate-400 truncate">{h.description}</div>
                     </div>
-                    <span className="text-[12px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                      {h.change}
-                    </span>
+                    {renderActivityBadge(h.change)}
                   </div>
                 ))}
               </div>
@@ -1159,49 +1324,174 @@ export function ReportScreen({ result, onRestart, theme }) {
 // ─────────────────────────────────────────
 // DRILL DOWN: INDIVIDUAL GURU REPORT DETAIL
 // ─────────────────────────────────────────
+// AUM Map for offline fallback (in USD)
+const AUM_MAP = {
+  'warren-buffett': 100000000000,
+  'li-lu': 2000000000,
+  'mohnish-pabrai': 300000000,
+  'guy-spier': 350000000,
+  'bill-ackman': 10000000000,
+  'cathie-wood': 6000000000,
+  'ray-dalio': 15000000000,
+  'howard-marks': 8000000000,
+  'stanley-druckenmiller': 3000000000,
+  'chase-coleman': 12000000000,
+  'seth-klarman': 9000000000,
+  'david-einhorn': 2000000000,
+  'daniel-loeb': 6000000000,
+  'bill-gates': 22000000000,
+  'glenn-greenberg': 1500000000,
+  'thomas-russo': 3000000000,
+  'stephen-mandel': 10000000000,
+  'donald-yacktman': 5000000000,
+  'alex-roepers': 1000000000,
+  'wallace-weitz': 2000000000,
+  'tom-gayner': 2000000000,
+  'prem-watsa': 4000000000,
+  'carl-icahn': 8000000000,
+  'jeffrey-ubben': 4000000000
+};
+
+// Stock Price Map for offline fallback (in USD)
+const TICKER_PRICE_MAP = {
+  'AAPL': 180.50,
+  'AXP': 220.30,
+  'KO': 61.20,
+  'BAC': 37.80,
+  'CVX': 155.40,
+  'GOOGL': 175.20,
+  'GOOG': 176.10,
+  'DAL': 45.60,
+  'PDD': 145.80,
+  'BRK.B': 410.50,
+  'EWBC': 78.40,
+  'CEIX': 85.30,
+  'MSFT': 420.10,
+  'AMR': 320.40,
+  'BN': 43.20,
+  'AMZN': 185.30,
+  'UBER': 72.40,
+  'QSR': 75.10,
+  'META': 475.20,
+  'HHH': 82.30,
+  'TSLA': 175.50,
+  'AMD': 165.40,
+  'CRSP': 62.10,
+  'SHOP': 74.80,
+  'PLTR': 25.30,
+  'SPY': 515.20,
+  'IVV': 520.40,
+  'NVDA': 900.50,
+  'TRGP': 115.40,
+  'VALE': 12.30,
+  'PCG': 16.80,
+  'NTRA': 92.50,
+  'INSM': 55.40,
+  'TSM': 140.20,
+  'AVGO': 1350.00,
+  'MELI': 1550.00,
+  'CB': 252.40,
+  'OXY': 63.50,
+  'TRMD': 28.32,
+  'EXE': 109.78,
+  'AU': 97.36,
+  'GTX': 18.17
+};
+
+function formatNumber(num) {
+  if (num === null || num === undefined) return "-";
+  return num.toLocaleString();
+}
+
+function formatUSD(num) {
+  if (num === null || num === undefined) return "-";
+  return "$" + num.toLocaleString();
+}
+
+function formatActivity(changeType, changePercent) {
+  if (!changeType || changeType === "유지") return "유지";
+  if (changeType === "신규" || changeType === "New") return "신규";
+  
+  const hasPercentOnly = /^\d+%$/.test(changeType.toString().trim());
+  const isAdd = changeType.includes("추가") || changeType.includes("확대") || changeType.includes("Add") || changeType.includes("+") || hasPercentOnly;
+  const isReduce = changeType.includes("축소") || changeType.includes("청산") || changeType.includes("Reduce") || changeType.includes("-");
+  
+  let percentStr = "";
+  if (changePercent && Number(changePercent) > 0) {
+    percentStr = ` (${isAdd ? "+" : "-"}${changePercent}%)`;
+  } else {
+    const match = changeType.match(/[-+]?\d+%/);
+    if (match) {
+      percentStr = ` (${match[0]})`;
+    }
+  }
+  
+  if (isAdd) return `추가${percentStr}`;
+  if (isReduce) return `축소${percentStr}`;
+  
+  return changeType;
+}
+
+function formatAUM(value) {
+  if (!value || isNaN(value)) return "정보 없음";
+  
+  const usdString = value >= 1000000000 
+    ? `$${(value / 1000000000).toFixed(1)}B` 
+    : `$${(value / 1000000).toFixed(1)}M`;
+
+  const krwValue = value * 1350;
+  let krwString = "";
+  if (krwValue >= 1000000000000) {
+    krwString = ` (약 ${(krwValue / 1000000000000).toFixed(1)}조 원)`;
+  } else if (krwValue >= 100000000) {
+    krwString = ` (약 ${(krwValue / 100000000).toFixed(0)}억 원)`;
+  }
+  
+  return `${usdString}${krwString}`;
+}
+
 export function GuruDetailReport({ guruId, theme }) {
   const dbReport = useSupabaseGuruReport(guruId);
+  const [hoveredSector, setHoveredSector] = useState(null);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const report = dbReport.report || getGuruReport(guruId);
-  const guru = GURUS_LIST.find(g => g.id === guruId);
-
-  if (!guru) return null;
-
-  // Fallback Essay for historical/inactive/no-action gurus
-  if (!report.hasChanges) {
+  if (dbReport.loading) {
     return (
-      <div className="rounded-3xl p-6 md:p-8 border border-amber-300 shadow-xl space-y-6 bg-amber-50/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shrink-0 font-bold">
-            ⏳
-          </div>
-          <div>
-            <div className="text-[14.5px] font-extrabold text-slate-800">{guru.nameKr} ({guru.firmName})</div>
-            <div className="text-[11.5px] text-slate-400">이번 분기 매매 동향: 정중동 (靜중動)</div>
-          </div>
-        </div>
-
-        {/* Long Philosophical Essay */}
-        <div className="border-t pt-4 border-amber-200">
-          <div className="text-[12px] font-bold text-amber-800 mb-2 uppercase">거장과의 철학적 만남</div>
-          <div className="text-[14px] leading-[1.75] text-slate-700 font-serif italic pl-4 border-l-4 border-amber-400 bg-white/40 p-4 rounded-r-xl whitespace-pre-line">
-            {report.essay}
-          </div>
-        </div>
-
-        <p className="text-[11px] text-center text-slate-400">
-          * 매매 변동 내역이 없을 시, 대가의 핵심 사상과 전략을 재조명하는 가이드 에세이가 제공됩니다.
-        </p>
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 dark:border-indigo-400 mb-3"></div>
+        <p className="text-sm font-medium">거장 상세 리포트 동기화 중...</p>
       </div>
     );
   }
 
-  // Active Guru 13F premium content view
-  const newBuys = [];
-  const additions = [];
-  const reductions = [];
-  const unchanged = [];
+  const guru = GURUS_LIST.find(g => g.id === guruId) || dbReport.dbGuru;
 
+  if (!guru) return null;
+
+  const report = dbReport.report || getGuruReport(guruId, dbReport.dbGuru);
+
+  const normalizedTrend = report && report.trendData ? report.trendData.map((item, idx) => {
+    if (typeof item === 'object' && item !== null) {
+      return {
+        quarter: item.quarter,
+        value: Number(item.value)
+      };
+    } else {
+      const total = report.trendData.length;
+      const diff = total - 1 - idx;
+      const baseVal = 2026 * 4 + 0;
+      const targetVal = baseVal - diff;
+      const targetYear = Math.floor(targetVal / 4);
+      const targetQ = (targetVal % 4) + 1;
+      return {
+        quarter: `${targetYear} Q${targetQ}`,
+        value: Number(item)
+      };
+    }
+  }) : [];
+
+  // Active Guru 13F premium content view
   const allHoldings = [];
   if (report.teaserTicker) {
     allHoldings.push({ ...report.teaserTicker, isTeaser: true });
@@ -1210,18 +1500,44 @@ export function GuruDetailReport({ guruId, theme }) {
     allHoldings.push(...report.premiumHoldings);
   }
 
-  allHoldings.forEach(h => {
-    const changeStr = (h.change || "").toString().trim();
-    if (changeStr.includes("신규") || changeStr.includes("New")) {
-      newBuys.push(h);
-    } else if (changeStr.includes("+") || changeStr.includes("추가") || changeStr.includes("확대") || changeStr === "추가") {
-      additions.push(h);
-    } else if (changeStr.includes("-") || changeStr.includes("축소") || changeStr.includes("감소") || changeStr === "축소") {
-      reductions.push(h);
-    } else {
-      unchanged.push(h);
+  // Process and calculate fallback calculations if properties are missing
+  const aum = report.aum || AUM_MAP[guruId] || 1000000000;
+  const processedHoldings = allHoldings.map(h => {
+    const weight = Number(h.weight) || 0;
+    const valueUsd = h.valueUsd !== undefined && h.valueUsd !== null 
+      ? h.valueUsd 
+      : Math.round(aum * (weight / 100));
+    const reportedPrice = h.reportedPrice !== undefined && h.reportedPrice !== null
+      ? h.reportedPrice
+      : TICKER_PRICE_MAP[h.ticker] || 100.00;
+    const sharesHeld = h.sharesHeld !== undefined && h.sharesHeld !== null
+      ? h.sharesHeld
+      : Math.round(valueUsd / reportedPrice);
+
+    // Extract change percent from h.change if it looks like "축소 (-35%)"
+    let changePercent = h.changePercent || 0;
+    if (!changePercent && typeof h.change === 'string') {
+      const match = h.change.match(/[\d.]+/);
+      if (match) changePercent = parseFloat(match[0]);
     }
+
+    return {
+      ticker: h.ticker,
+      name: h.name,
+      weight,
+      valueUsd,
+      sharesHeld,
+      reportedPrice,
+      changeType: h.change || "유지",
+      changePercent,
+      isTeaser: h.isTeaser || false
+    };
   });
+
+  // Sort by weight descending
+  processedHoldings.sort((a, b) => b.weight - a.weight);
+
+  const displayedHoldings = isExpanded ? processedHoldings : processedHoldings.slice(0, 10);
 
   return (
     <div className="rounded-3xl p-6 md:p-8 border border-slate-100 shadow-xl space-y-6 bg-white">
@@ -1237,11 +1553,17 @@ export function GuruDetailReport({ guruId, theme }) {
               </span>
             )}
           </div>
-          <h3 className="text-[18px] font-bold text-slate-800">
+          <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-100">
             {guru.nameKr} 포트폴리오
           </h3>
-          <p className="text-[12px] text-slate-400">
-            공시일: {report.filingDate} · 기준: {report.quarter}
+          <p className="text-[12px] text-slate-400 flex flex-wrap gap-x-2 gap-y-1 items-center">
+            <span>공시일: {report.filingDate}</span>
+            <span className="text-slate-200 dark:text-slate-700">·</span>
+            <span>기준: {report.quarter}</span>
+            <span className="text-slate-200 dark:text-slate-700">·</span>
+            <span>
+              운용규모: <span className="font-semibold text-slate-600 dark:text-slate-300">{formatAUM(aum)}</span>
+            </span>
           </p>
         </div>
         <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shrink-0">
@@ -1253,91 +1575,99 @@ export function GuruDetailReport({ guruId, theme }) {
         {guru.description}
       </p>
 
-      {/* Holdings changes grouped */}
-      <div className="space-y-4">
-        <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">핵심 매매 종목 동향</h4>
-        
-        {/* 1. New entry & Additions */}
-        {(newBuys.length > 0 || additions.length > 0) && (
-          <div className="space-y-2">
-            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider inline-block">
-              신규 매수 및 비중 확대 (+)
-            </span>
-            <div className="space-y-2">
-              {[...newBuys, ...additions].map((h, i) => (
-                <div key={i} className={`p-3.5 rounded-xl border flex items-center justify-between ${h.isTeaser ? "bg-indigo-50/20 border-indigo-100" : "bg-emerald-50/10 border-emerald-100"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 text-white ${h.isTeaser ? "bg-indigo-600 animate-pulse" : "bg-emerald-600"}`}>
-                      {h.ticker}
-                    </div>
-                    <div>
-                      <div className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5">
-                        <span>{h.name}</span>
-                        {h.isTeaser && <span className="px-1.5 py-0.5 rounded text-[8px] bg-indigo-600 text-white font-extrabold uppercase">Premium</span>}
-                      </div>
-                      <div className="text-[11px] text-slate-400">{h.reason}</div>
-                    </div>
-                  </div>
-                  <span className="text-[12px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg shrink-0">
-                    {h.change} ({h.weight}%)
-                  </span>
-                </div>
-              ))}
+      {/* Fallback Essay for historical/inactive/no-action gurus */}
+      {!report.hasChanges && report.essay && (
+        <div className="rounded-2xl p-5 border border-amber-200 bg-amber-50/10 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-base shrink-0 font-bold">
+              ⏳
+            </div>
+            <div>
+              <div className="text-[13px] font-extrabold text-slate-800">
+                이번 분기 매매 동향: 정중동 (靜中動)
+              </div>
+              <div className="text-[11px] text-slate-400">
+                매매 변동 내역이 없을 시 거장의 핵심 사상과 전략 에세이를 제공합니다.
+              </div>
             </div>
           </div>
-        )}
-
-        {/* 2. Reductions */}
-        {reductions.length > 0 && (
-          <div className="space-y-2">
-            <span className="text-[10px] font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded uppercase tracking-wider inline-block">
-              비중 축소 및 일부 매도 (-)
-            </span>
-            <div className="space-y-2">
-              {reductions.map((h, i) => (
-                <div key={i} className="p-3.5 rounded-xl border border-rose-100 bg-rose-50/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold text-[12px] shrink-0">
-                      {h.ticker}
-                    </div>
-                    <div>
-                      <div className="text-[13px] font-bold text-slate-800">{h.name}</div>
-                      <div className="text-[11px] text-slate-400">{h.reason}</div>
-                    </div>
-                  </div>
-                  <span className="text-[12px] font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-lg shrink-0">
-                    {h.change} ({h.weight}%)
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div className="text-[13px] leading-[1.7] text-slate-700 font-serif italic pl-4 border-l-4 border-amber-400 bg-white/60 p-4 rounded-r-xl whitespace-pre-line">
+            {report.essay}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 3. Unchanged */}
-        {unchanged.length > 0 && (
-          <div className="space-y-2">
-            <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider inline-block">
-              비중 유지 (동결)
-            </span>
-            <div className="space-y-2">
-              {unchanged.map((h, i) => (
-                <div key={i} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-400 text-white flex items-center justify-center font-bold text-[12px] shrink-0">
-                      {h.ticker}
-                    </div>
-                    <div>
-                      <div className="text-[13px] font-bold text-slate-800">{h.name}</div>
-                      <div className="text-[11px] text-slate-400">{h.reason}</div>
-                    </div>
-                  </div>
-                  <span className="text-[12px] font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0">
-                    {h.change} ({h.weight}%)
-                  </span>
-                </div>
-              ))}
-            </div>
+      {/* Dataroma style data table */}
+      <div className="space-y-3">
+        <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">포트폴리오 보유 종목 (Holdings)</h4>
+        <div className="relative">
+          <div className={`overflow-x-auto rounded-2xl border border-slate-200/80 shadow-sm bg-white transition-all duration-300 ${!isExpanded && processedHoldings.length > 10 ? "max-h-[380px] overflow-hidden" : isExpanded && processedHoldings.length > 10 ? "max-h-[480px] overflow-y-auto" : ""}`}>
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10">
+                <tr className="border-b border-slate-200" style={{ backgroundColor: "rgba(248, 250, 252, 0.8)" }}>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-left">Stock / Company</th>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-right">% of Portfolio</th>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-right">Recent Activity</th>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-right">Shares</th>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-right">Reported Price</th>
+                  <th className="text-[11.5px] font-extrabold text-slate-400 uppercase tracking-wider py-4 px-4 text-right">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedHoldings.map((h, idx) => {
+                  const actText = formatActivity(h.changeType, h.changePercent);
+                  const activityBadge = renderActivityBadge(actText);
+
+                  return (
+                    <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
+                      <td className="py-4 px-4 text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-[13px] text-slate-800 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/50">{h.ticker}</span>
+                          <div className="min-w-0">
+                            <div className="font-bold text-[13px] text-slate-700 truncate" style={{ maxWidth: '180px' }} title={h.name}>{h.name}</div>
+                            {h.isTeaser && <span className="text-[9px] bg-indigo-600 text-white font-black px-1.5 py-0.2 rounded uppercase inline-block">Premium</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-right font-black text-[13px] text-slate-800 tabular-nums">{h.weight.toFixed(2)}%</td>
+                      <td className="py-4 px-4 text-right tabular-nums">{activityBadge}</td>
+                      <td className="py-4 px-4 text-right font-bold text-[13px] text-slate-600 tabular-nums">{formatNumber(h.sharesHeld)}</td>
+                      <td className="py-4 px-4 text-right font-bold text-[13px] text-slate-600 tabular-nums">{formatUSD(h.reportedPrice)}</td>
+                      <td className="py-4 px-4 text-right font-black text-[13px] text-slate-800 tabular-nums">{formatUSD(h.valueUsd)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Overlay fade mask when collapsed and has items to show */}
+          {!isExpanded && processedHoldings.length > 10 && (
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none z-10" />
+          )}
+        </div>
+
+        {/* Toggle Button */}
+        {processedHoldings.length > 10 && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-[12.5px] font-extrabold border shadow-sm transition-all active:scale-[0.98] hover:shadow bg-white text-slate-700 border-slate-200"
+              style={{
+                borderColor: theme.accentSoft,
+                color: theme.accent
+              }}
+            >
+              {isExpanded ? (
+                <>
+                  보유 종목 접기 <Icon name="chevron-up" size={13} />
+                </>
+              ) : (
+                <>
+                  보유 종목 더보기 ({processedHoldings.length - 10}개 더 있음) <Icon name="chevron-down" size={13} />
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>
@@ -1346,31 +1676,69 @@ export function GuruDetailReport({ guruId, theme }) {
       {report.sectorMix && (
         <div className="space-y-3">
           <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">포트폴리오 업종 비중</h4>
-          <div className="flex items-center gap-6">
-            <svg viewBox="0 0 100 100" className="w-[90px] h-[90px] shrink-0">
-              {(() => {
-                let acc = 0;
-                const r = 38, c = 50;
-                return report.sectorMix.map((s, idx) => {
-                  const start = (acc / 100) * 360;
-                  acc += s.value;
-                  const end = (acc / 100) * 360;
-                  const large = end - start > 180 ? 1 : 0;
-                  const x1 = c + r * Math.cos((start - 90) * Math.PI / 180);
-                  const y1 = c + r * Math.sin((start - 90) * Math.PI / 180);
-                  const x2 = c + r * Math.cos((end - 90) * Math.PI / 180);
-                  const y2 = c + r * Math.sin((end - 90) * Math.PI / 180);
-                  return (
-                    <path 
-                      key={idx} 
-                      d={`M ${c} ${c} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`} 
-                      fill={s.color} 
-                    />
-                  );
-                });
-              })()}
-              <circle cx="50" cy="50" r="22" fill="#fff" />
-            </svg>
+          <div className="flex items-center gap-6 relative">
+            <div className="relative shrink-0">
+              <svg viewBox="0 0 100 100" className="w-[90px] h-[90px]">
+                {(() => {
+                  let acc = 0;
+                  const r = 38, c = 50;
+                  return report.sectorMix.map((s, idx) => {
+                    const start = (acc / 100) * 360;
+                    acc += s.value;
+                    const end = (acc / 100) * 360;
+                    const large = end - start > 180 ? 1 : 0;
+                    const x1 = c + r * Math.cos((start - 90) * Math.PI / 180);
+                    const y1 = c + r * Math.sin((start - 90) * Math.PI / 180);
+                    const x2 = c + r * Math.cos((end - 90) * Math.PI / 180);
+                    const y2 = c + r * Math.sin((end - 90) * Math.PI / 180);
+                    const isHovered = hoveredSector && hoveredSector.name === s.name;
+                    return (
+                      <path 
+                        key={idx} 
+                        d={`M ${c} ${c} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`} 
+                        fill={s.color}
+                        stroke={isHovered ? "#fff" : "none"}
+                        strokeWidth={isHovered ? "1" : "0"}
+                        opacity={hoveredSector ? (isHovered ? "1" : "0.75") : "1"}
+                        className="transition-all duration-150 cursor-pointer"
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+                          const x = ((e.clientX - rect.left) / rect.width) * 100;
+                          const y = ((e.clientY - rect.top) / rect.height) * 100;
+                          setHoveredSector({
+                            name: s.name,
+                            value: s.value,
+                            color: s.color,
+                            x,
+                            y
+                          });
+                        }}
+                        onMouseMove={(e) => {
+                          const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+                          const x = ((e.clientX - rect.left) / rect.width) * 100;
+                          const y = ((e.clientY - rect.top) / rect.height) * 100;
+                          setHoveredSector(prev => prev ? { ...prev, x, y } : null);
+                        }}
+                        onMouseLeave={() => setHoveredSector(null)}
+                      />
+                    );
+                  });
+                })()}
+                <circle cx="50" cy="50" r="22" fill="#fff" />
+              </svg>
+              {hoveredSector && (
+                <div 
+                  className="absolute z-10 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg border border-slate-700 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-1.5 whitespace-nowrap animate-fade-in"
+                  style={{
+                    left: `${hoveredSector.x}%`,
+                    top: `${hoveredSector.y}%`
+                  }}
+                >
+                  <span className="inline-block w-2 h-2 rounded-sm mr-1" style={{ background: hoveredSector.color }}></span>
+                  {hoveredSector.name}: {hoveredSector.value}%
+                </div>
+              )}
+            </div>
             <div className="flex-1 space-y-1.5">
               {report.sectorMix.map((s, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-[11.5px]">
@@ -1385,24 +1753,25 @@ export function GuruDetailReport({ guruId, theme }) {
       )}
 
       {/* Sparkline historical cash ratio */}
-      {report.trendData && (
+      {normalizedTrend && normalizedTrend.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-baseline">
-            <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">최근 12분기 현금 비중 추이</h4>
+            <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">최근 {normalizedTrend.length}분기 현금 비중 추이</h4>
             <span className="text-[12.5px] font-bold text-slate-800">
-              최근: {report.trendData[report.trendData.length - 1]}%
+              최근: {normalizedTrend[normalizedTrend.length - 1].value}%
             </span>
           </div>
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 relative">
             <svg viewBox="0 0 300 80" className="w-full h-[80px]">
               {(() => {
-                const w = 300, h = 80, p = 4;
-                const min = Math.min(...report.trendData);
-                const max = Math.max(...report.trendData);
+                const w = 300, h = 80, p = 8;
+                const vals = normalizedTrend.map(d => d.value);
+                const min = Math.min(...vals);
+                const max = Math.max(...vals);
                 const range = (max - min) || 1;
-                const pts = report.trendData.map((v, i) => {
-                  const x = p + (i / (report.trendData.length - 1)) * (w - p * 2);
-                  const y = h - p - ((v - min) / range) * (h - p * 2);
+                const pts = normalizedTrend.map((d, i) => {
+                  const x = p + (i / (normalizedTrend.length - 1)) * (w - p * 2);
+                  const y = h - p - ((d.value - min) / range) * (h - p * 2);
                   return [x, y];
                 });
                 const dPath = pts.map(([x, y], i) => (i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`)).join(" ");
@@ -1412,10 +1781,63 @@ export function GuruDetailReport({ guruId, theme }) {
                     <path d={areaPath} fill={theme.accentSoft} opacity="0.4" />
                     <path d={dPath} fill="none" stroke={theme.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="4" fill={theme.accent} />
+                    
+                    {hoveredPoint && (
+                      <>
+                        <line 
+                          x1={hoveredPoint.x} 
+                          y1={4} 
+                          x2={hoveredPoint.x} 
+                          y2={80 - 4} 
+                          stroke={theme.accent} 
+                          strokeWidth="1.5" 
+                          strokeDasharray="3,3" 
+                        />
+                        <circle 
+                          cx={hoveredPoint.x} 
+                          cy={hoveredPoint.y} 
+                          r="5.5" 
+                          fill={theme.accent} 
+                          stroke="#fff" 
+                          strokeWidth="2" 
+                        />
+                      </>
+                    )}
+
+                    {/* 투명 호버 영역 */}
+                    {pts.map(([x, y], i) => (
+                      <circle
+                        key={i}
+                        cx={x}
+                        cy={y}
+                        r="14"
+                        fill="transparent"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredPoint({
+                          quarter: normalizedTrend[i].quarter,
+                          value: normalizedTrend[i].value,
+                          x,
+                          y
+                        })}
+                        onMouseLeave={() => setHoveredPoint(null)}
+                      />
+                    ))}
                   </>
                 );
               })()}
             </svg>
+            {hoveredPoint && (
+              <div 
+                className="absolute z-10 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-lg border border-slate-700 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-1 whitespace-nowrap animate-fade-in"
+                style={{
+                  left: `${(hoveredPoint.x / 300) * 100}%`,
+                  top: `${(hoveredPoint.y / 80) * 100}%`
+                }}
+              >
+                <div className="text-[8.5px] text-slate-400 leading-none mb-0.5">{hoveredPoint.quarter}</div>
+                <div>현금 비중: {hoveredPoint.value}%</div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1654,6 +2076,31 @@ export function AboutScreen({ theme, onStart }) {
 // 8. 16 INVESTMENT STYLES SCREEN (16가지 투자성향)
 // ─────────────────────────────────────────
 export function StylesScreen({ theme }) {
+  const [dbGurus, setDbGurus] = useState([]);
+
+  useEffect(() => {
+    async function fetchGurus() {
+      if (!isSupabaseConfigured) return;
+      try {
+        const { data, error } = await supabase
+          .from("gurus")
+          .select("id, name_kr, mbti_type, firm_name");
+        if (!error && data) {
+          const mapped = data.map(g => ({
+            id: g.id,
+            nameKr: g.name_kr,
+            mbtiType: g.mbti_type,
+            firmName: g.firm_name
+          }));
+          setDbGurus(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch gurus for StylesScreen:", err);
+      }
+    }
+    fetchGurus();
+  }, []);
+
   return (
     <div className="w-full max-w-[1150px] mx-auto px-4 py-8 space-y-8 animate-slide-in-right">
       <div className="space-y-2 text-center max-w-[700px] mx-auto">
@@ -1668,7 +2115,8 @@ export function StylesScreen({ theme }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {Object.entries(TYPES).map(([code, style]) => {
-          const gurus = GURUS_LIST.filter(g => g.mbtiType === code);
+          const sourceList = dbGurus.length > 0 ? dbGurus : GURUS_LIST;
+          const gurus = sourceList.filter(g => g.mbtiType === code);
           return (
             <div key={code} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-4 hover:border-indigo-200 transition">
               <div className="space-y-2">
@@ -1733,11 +2181,10 @@ export function Live13fScreen({ theme }) {
 
         if (!error && data && data.length > 0) {
           const mapped = data.map(item => {
-            let changeVal = item.change_type || "유지";
-            if (item.change_percent && item.change_percent !== 0) {
-              const sign = item.change_percent > 0 ? "+" : "";
-              changeVal = `${changeVal} (${sign}${item.change_percent}%)`;
-            }
+            const changeVal = formatActivity(item.change_type, item.change_percent);
+            const isBuy = changeVal.includes("추가") || changeVal.includes("신규");
+            const isSell = changeVal.includes("축소");
+
             return {
               guruId: item.guru_id,
               guruName: item.gurus?.name_kr || "알 수 없는 거장",
@@ -1746,6 +2193,7 @@ export function Live13fScreen({ theme }) {
               companyName: item.company_name,
               weight: item.weight,
               change: changeVal,
+              actionType: isBuy ? "buy" : (isSell ? "sell" : "hold"),
               filingDate: "2026.05.15",
               quarter: "2026 Q1"
             };
@@ -1768,6 +2216,10 @@ export function Live13fScreen({ theme }) {
     if (!guru || !report.hasChanges) return;
 
     if (report.teaserTicker) {
+      const changeVal = formatActivity(report.teaserTicker.change, report.teaserTicker.changePercent);
+      const isBuy = changeVal.includes("추가") || changeVal.includes("신규");
+      const isSell = changeVal.includes("축소");
+
       mockTx.push({
         guruId,
         guruName: guru.nameKr,
@@ -1775,7 +2227,8 @@ export function Live13fScreen({ theme }) {
         ticker: report.teaserTicker.ticker,
         companyName: report.teaserTicker.name,
         weight: report.teaserTicker.weight,
-        change: report.teaserTicker.change,
+        change: changeVal,
+        actionType: isBuy ? "buy" : (isSell ? "sell" : "hold"),
         filingDate: report.filingDate,
         quarter: report.quarter
       });
@@ -1783,6 +2236,10 @@ export function Live13fScreen({ theme }) {
 
     if (report.premiumHoldings) {
       report.premiumHoldings.forEach(h => {
+        const changeVal = formatActivity(h.change, h.changePercent);
+        const isBuy = changeVal.includes("추가") || changeVal.includes("신규");
+        const isSell = changeVal.includes("축소");
+
         mockTx.push({
           guruId,
           guruName: guru.nameKr,
@@ -1790,7 +2247,8 @@ export function Live13fScreen({ theme }) {
           ticker: h.ticker,
           companyName: h.name,
           weight: h.weight,
-          change: h.change,
+          change: changeVal,
+          actionType: isBuy ? "buy" : (isSell ? "sell" : "hold"),
           filingDate: report.filingDate,
           quarter: report.quarter
         });
@@ -1805,15 +2263,8 @@ export function Live13fScreen({ theme }) {
       tx.companyName.toLowerCase().includes(tickerSearch.toLowerCase()) ||
       tx.guruName.includes(tickerSearch);
 
-    const changeStr = (tx.change || "").toString();
-    const isBuy = changeStr.includes("+") || changeStr.includes("신규") || changeStr.includes("추가") || changeStr.includes("확대");
-    const isSell = changeStr.includes("-") || changeStr.includes("축소") || changeStr.includes("매도");
-    const isHold = !isBuy && !isSell;
-
-    if (filterAction === "buy") return matchSearch && isBuy;
-    if (filterAction === "sell") return matchSearch && isSell;
-    if (filterAction === "hold") return matchSearch && isHold;
-    return matchSearch;
+    if (filterAction === "all") return matchSearch;
+    return matchSearch && tx.actionType === filterAction;
   });
 
   return (
@@ -1890,9 +2341,8 @@ export function Live13fScreen({ theme }) {
             <tbody className="divide-y divide-slate-50 font-bold text-slate-700">
               {filtered.length > 0 ? (
                 filtered.map((tx, idx) => {
-                  const changeStr = tx.change.toString();
-                  const isBuy = changeStr.includes("+") || changeStr.includes("신규") || changeStr.includes("추가");
-                  const isSell = changeStr.includes("-") || changeStr.includes("축소") || changeStr.includes("매도");
+                  const isBuy = tx.actionType === "buy";
+                  const isSell = tx.actionType === "sell";
 
                   return (
                     <tr key={idx} className="hover:bg-slate-50/50 transition">
