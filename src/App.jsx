@@ -32,17 +32,53 @@ function App() {
   // App routing state
   const [screen, setScreen] = useState("landing"); // landing | test | result | auth | report | about | styles | live13f
   const [answers, setAnswers] = useState(null);
-  const [resultCode, setResultCode] = useState(null);
+  const [resultCode, setResultCode] = useState(() => {
+    return localStorage.getItem("guru_mbti_temp_result") || null;
+  });
   const [user, setUser] = useState(null);
 
   // Monitor Auth sessions
   useEffect(() => {
     if (isSupabaseConfigured) {
+      // 1. Initial Session Check
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
+        const loggedInUser = session?.user ?? null;
+        setUser(loggedInUser);
+        
+        const cachedResult = localStorage.getItem("guru_mbti_temp_result");
+        if (loggedInUser && cachedResult) {
+          supabase
+            .from("profiles")
+            .update({ mbti_type: cachedResult })
+            .eq("id", loggedInUser.id)
+            .then(() => {
+              localStorage.removeItem("guru_mbti_temp_result");
+              setScreen("report");
+            });
+        }
       });
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
+
+      // 2. Auth State Change Listener (Catches OAuth redirects)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const loggedInUser = session?.user ?? null;
+        setUser(loggedInUser);
+        
+        if (loggedInUser && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
+          const cachedResult = localStorage.getItem("guru_mbti_temp_result");
+          if (cachedResult) {
+            supabase
+              .from("profiles")
+              .update({ mbti_type: cachedResult })
+              .eq("id", loggedInUser.id)
+              .then(() => {
+                localStorage.removeItem("guru_mbti_temp_result");
+                setScreen("report");
+              });
+          } else {
+            // Already logged in and no temp cache, go to report screen if route allows
+            setScreen("report");
+          }
+        }
       });
       return () => subscription.unsubscribe();
     } else {
@@ -60,6 +96,9 @@ function App() {
     const calculated = calculateType(ans);
     setResultCode(calculated.code);
     
+    // Save to localStorage temporarily in case of OAuth redirect reloads
+    localStorage.setItem("guru_mbti_temp_result", calculated.code);
+    
     // Auto-update profile with type if logged in
     if (user) {
       if (isSupabaseConfigured) {
@@ -67,7 +106,9 @@ function App() {
           .from("profiles")
           .update({ mbti_type: calculated.code })
           .eq("id", user.id)
-          .then();
+          .then(() => {
+            localStorage.removeItem("guru_mbti_temp_result");
+          });
       } else {
         fallbackAuth.updateProfileMbti(calculated.code);
       }
@@ -90,7 +131,9 @@ function App() {
         .from("profiles")
         .update({ mbti_type: finalMbti })
         .eq("id", loggedInUser.id)
-        .then();
+        .then(() => {
+          localStorage.removeItem("guru_mbti_temp_result");
+        });
     } else {
       fallbackAuth.updateProfileMbti(finalMbti);
     }
@@ -104,6 +147,7 @@ function App() {
     } else {
       await fallbackAuth.signOut();
     }
+    localStorage.removeItem("guru_mbti_temp_result");
     setUser(null);
     setScreen("landing");
   }
@@ -112,6 +156,7 @@ function App() {
     setScreen("landing");
     setAnswers(null);
     setResultCode(null);
+    localStorage.removeItem("guru_mbti_temp_result");
   }
 
   // Pre-calculate current result block in case of straight routing or refreshes
