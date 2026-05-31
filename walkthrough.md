@@ -65,6 +65,15 @@
     - AUM 값을 직관적으로 읽을 수 있도록 USD 크기 단위(M: 백만, B: 10억) 표기와 더불어 환율(1$ = 1,350원 기준)을 자동 연산하여 한화 환산 가치(예: `(약 135.0조 원)` 혹은 `(약 4,050억 원)`)를 괄호 형태로 함께 노출하는 프리미엄 메타 디스플레이(`formatAUM` 헬퍼)를 구축하고, 리포트 헤더에 연동 배치했습니다.
   * **종합 효과**: 이제 DB에 실시간 스크래핑된 임의의 신규 거장이라도 메인/Styles/Live13F 화면 등에서 클릭 시 한글명, 소속 회사명, 정확한 MBTI 유형이 완벽하게 렌더링되며 이에 맞춤화된 포트폴리오와 상세 프로필 카드 및 실제 펀드 규모(AUM)가 정상적으로 표출됩니다.
 
+### 6. Vercel 배포 후 소셜 로그인(OAuth) 연동 트러블슈팅 및 마인드닷 복귀 버튼 추가
+* **Vercel & Supabase 환경 변수 및 OAuth Redirect 검증 해결**:
+  * Vercel 배포 이후 소셜 로그인(카카오, 구글) 시, Supabase의 Site URL 및 Redirect URLs 설정이 예전 프로젝트(`mind-dot`)로 되어 있어 사용자가 튕겨 나가는 이슈를 디버깅했습니다.
+  * Vercel 임시 도메인(`https://*.vercel.app`) 및 하위 경로까지 모두 대응 가능하도록 Supabase **Redirect URLs**에 와일드카드 패턴(`https://*.vercel.app/**`, `https://guru-mbti.vercel.app/**`) 등록 방법을 가이드하여 다중 사이트 공유 DB 환경에서 소셜 로그인을 완벽하게 정상화시켰습니다.
+* **마인드닷(Mind-Dot)으로 이동 바로가기 연동**:
+  * 사용자가 소셜 로그인을 성공하면 `mind-dot`으로 강제 이동되는 대신, **결과 리포트 화면(`ReportScreen`)**을 먼저 안전하게 출력하도록 흐름을 정돈했습니다.
+  * 리포트 화면 우측 상단 헤더에 **[마인드닷(Mind-Dot)으로 이동]** 바로가기 링크 버튼을 신설하여, 리포트를 전부 확인한 후 자연스럽게 원래 서비스인 마인드닷으로 넘어갈 수 있도록 사용자 흐름을 개선했습니다.
+  * 이동할 마인드닷의 URL은 환경 변수 `VITE_MIND_DOT_URL`을 통해 유연하게 바꿀 수 있도록 구현했습니다 (기본값: `https://mind-dot.vercel.app`).
+
 ---
 
 ## 🛠️ 이전 반영 핵심 프로덕션 내역
@@ -86,10 +95,12 @@
 * **개발 서버 구동**: **[http://localhost:5173/](http://localhost:5173/)**
 
 ### 2. Supabase 공유 DB 연동 준비 사항
-1. **.env 설정**:
-   * 프로젝트 루트의 `.env` 파일에 `www.mind-dot.com`이 사용하는 Supabase 접속 주소 및 ANON_KEY 정보를 입력합니다.
+1. **환경 변수 설정 (.env & Vercel)**:
+   * 프로젝트 루트의 `.env` 파일 및 Vercel 프로젝트 대시보드의 **Settings -> Environment Variables**에 Supabase 접속 주소(`VITE_SUPABASE_URL`)와 `VITE_SUPABASE_ANON_KEY` 정보를 입력합니다.
+   * 마인드닷 서비스로 돌아가는 이동 링크를 수정하려면 `VITE_MIND_DOT_URL` 환경 변수를 사용하세요 (기본값: `https://mind-dot.vercel.app`).
 2. **Redirect URLs 추가 (소셜 로그인용)**:
-   * **Supabase 대시보드 -> Authentication -> URL Configuration -> Redirect URLs**에 `http://localhost:5173` 및 실 배포 주소를 등록합니다.
+   * **Supabase 대시보드 -> Authentication -> URL Configuration -> Redirect URLs**에 `http://localhost:5173` 외에 배포 및 테스트용 주소들을 등록합니다.
+   * 특히 Vercel 임시 도메인 연동을 위해 **와일드카드 패턴**(`https://*.vercel.app`, `https://*.vercel.app/**`, `https://guru-mbti.vercel.app/**`)을 등록해 주어야 소셜 로그인 성공 시 튕기지 않고 정상적으로 리포트 화면으로 복귀합니다.
 
 ### 3. Dataroma 실시간 데이터 스키마 및 크롤러 연동 가이드
 1. **Dataroma용 테이블 스키마 생성**:

@@ -65,5 +65,11 @@
 - [x] DB 상태 재조회 (`query_gurus.js`) 및 상세 정보 로드 정상화 확인
 - [x] 프로덕션 빌드 무결성 검증 (`npm run build`)
 
+## 9단계: Vercel 배포 후 소셜 로그인 연동 디버깅 및 마인드닷 복귀 버튼 추가
+- [x] Vercel 배포 후 소셜 로그인 시 `mind-dot`으로 강제 리디렉션되는 오류 원인 진단 및 해결 가이드 제공 (Supabase Site URL/Redirect URLs 화이트리스트 및 Vercel 임시 배포 도메인 불일치 이슈)
+- [x] 결과 리포트 화면(`ReportScreen`) 상단 우측 헤더에 "마인드닷(Mind-Dot)으로 이동" 바로가기 버튼 추가 (`MbtiScreens.jsx`)
+- [x] 이동 주소를 유연하게 설정할 수 있는 환경 변수 `VITE_MIND_DOT_URL` 정의 및 `.env`, `.env.example` 템플릿 업데이트
+- [x] 깃허브 푸시 및 프로덕션 빌드 유효성 최종 점검 (`npm run build`)
+
 
 
