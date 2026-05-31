@@ -1147,10 +1147,20 @@ export function ReportScreen({ result, onRestart, theme }) {
           </p>
         </div>
 
-        <button onClick={onRestart} className="h-10 px-4 rounded-xl text-[13px] font-bold border border-slate-200 flex items-center justify-center gap-1.5 bg-white text-slate-600 hover:bg-slate-50 transition shrink-0">
-          <Icon name="rotate-ccw" size={14} />
-          <span>다시 진단</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={import.meta.env.VITE_MIND_DOT_URL || "https://mind-dot.vercel.app"}
+            className="h-10 px-4 rounded-xl text-[13px] font-bold text-white flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 transition"
+            style={{ backgroundColor: theme.accent }}
+          >
+            <Icon name="external-link" size={14} />
+            <span>마인드닷(Mind-Dot)으로 이동</span>
+          </a>
+          <button onClick={onRestart} className="h-10 px-4 rounded-xl text-[13px] font-bold border border-slate-200 flex items-center justify-center gap-1.5 bg-white text-slate-600 hover:bg-slate-50 transition shrink-0">
+            <Icon name="rotate-ccw" size={14} />
+            <span>다시 진단</span>
+          </button>
+        </div>
       </div>
 
       {/* Group Gurus Overview Card */}
