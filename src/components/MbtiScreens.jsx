@@ -844,7 +844,7 @@ export function ResultScreen({ result, onContinue, theme }) {
           {/* Premium blocker stack */}
           <div className="rounded-3xl p-6 md:p-8 bg-slate-900 text-white relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-36 h-36 rounded-full bg-white/5"></div>
-            
+
             <div className="relative space-y-5">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white">PREMIUM</span>
@@ -874,15 +874,46 @@ export function ResultScreen({ result, onContinue, theme }) {
                 </div>
               </div>
 
+              {/* Primary CTA: mind-dot */}
+              <a
+                href={import.meta.env.VITE_MIND_DOT_URL || "https://mind-dot.vercel.app"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-[52px] rounded-xl font-extrabold text-[15px] transition-all hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
+                style={{ background: theme.accent, color: "#fff" }}
+              >
+                <span>마인드닷(Mind-Dot) 무료 가입하기</span>
+                <Icon name="arrow-right" size={16} />
+              </a>
+
+              {/* Secondary: internal auth */}
               <button
                 onClick={onContinue}
-                className="w-full h-[52px] rounded-xl text-white font-extrabold text-[15px] transition-all hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
-                style={{ background: theme.accent }}
+                className="w-full text-center text-[12px] text-slate-400 hover:text-slate-200 transition underline underline-offset-2"
               >
-                <span>무료 가입하고 전체 분석 열람하기</span>
-                <Icon name="arrow-right" size={16} />
+                이미 사이트 계정이 있으신가요? 로그인
               </button>
             </div>
+          </div>
+
+          {/* mind-dot quarterly update CTA */}
+          <div className="rounded-3xl p-5 border border-indigo-200/40 bg-indigo-50/10 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-base shrink-0">🔔</div>
+              <div>
+                <div className="text-[13.5px] font-extrabold text-slate-800">매 분기 포트폴리오 업데이트 알림 받기</div>
+                <div className="text-[12px] text-slate-500 mt-0.5">구루들의 13F가 공시될 때마다 내 성향에 맞는 변화를 분석해 알려드립니다.</div>
+              </div>
+            </div>
+            <a
+              href={import.meta.env.VITE_MIND_DOT_URL || "https://mind-dot.vercel.app"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-indigo-300/50 bg-white hover:bg-indigo-50 transition text-[13px] font-bold text-indigo-700"
+            >
+              <span>마인드닷에서 알림 설정하기</span>
+              <Icon name="external-link" size={13} />
+            </a>
           </div>
         </div>
       </div>
@@ -1381,6 +1412,43 @@ export function ReportScreen({ result, onRestart, theme }) {
           )}
         </div>
       </div>
+
+      {/* mind-dot CTA Banner */}
+      <div className="rounded-[28px] overflow-hidden border border-indigo-200/40 shadow-sm"
+        style={{ background: `linear-gradient(135deg, ${theme.accentSoft}, #f0f4ff)` }}>
+        <div className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+          <div className="flex-1 space-y-2 text-center md:text-left">
+            <div className="text-[10px] font-extrabold tracking-widest uppercase" style={{ color: theme.accent }}>
+              MIND-DOT · 투자 인사이트 플랫폼
+            </div>
+            <h3 className="text-[20px] md:text-[22px] font-extrabold text-slate-800 leading-snug">
+              매 분기 구루 포트폴리오 변화를<br className="hidden md:block" />
+              가장 먼저 받아보세요
+            </h3>
+            <p className="text-[13px] text-slate-500 leading-relaxed">
+              13F 공시 이후 내 투자 성향에 맞는 핵심 변화만 선별해 알림으로 전달됩니다.
+              <br />GURU DNA 진단 결과도 마인드닷 프로필에 저장해 활용할 수 있습니다.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
+            <a
+              href={import.meta.env.VITE_MIND_DOT_URL || "https://mind-dot.vercel.app"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-[52px] px-7 rounded-xl font-extrabold text-[15px] text-white flex items-center justify-center gap-2 transition hover:opacity-90 active:scale-[0.99] shadow-lg"
+              style={{ background: theme.accent, boxShadow: `0 8px 24px ${theme.accent}40` }}
+            >
+              <span>마인드닷 무료 가입하기</span>
+              <Icon name="arrow-right" size={16} />
+            </a>
+            <div className="flex items-center justify-center gap-4 text-[11.5px] text-slate-400">
+              <span className="flex items-center gap-1"><Icon name="check" size={11} /><span>분기별 알림</span></span>
+              <span className="flex items-center gap-1"><Icon name="check" size={11} /><span>성향 맞춤 필터</span></span>
+              <span className="flex items-center gap-1"><Icon name="check" size={11} /><span>무료</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1626,7 +1694,7 @@ export function GuruDetailReport({ guruId, theme }) {
             <span>기준: {report.quarter}</span>
             <span className="text-slate-200 dark:text-slate-700">·</span>
             <span>
-              운용규모: <span className="font-semibold text-slate-600 dark:text-slate-300">{formatAUM(aum)}</span>
+              운용규모: <span className="font-semibold text-slate-600 dark:text-slate-300">{guru.aum || formatAUM(aum)}</span>
             </span>
           </p>
         </div>
@@ -1638,6 +1706,65 @@ export function GuruDetailReport({ guruId, theme }) {
       <p className="text-[13px] leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-600">
         {guru.description}
       </p>
+
+      {/* Guru Background Profile */}
+      {(guru.background || guru.aum || guru.investmentStyle || guru.famousTrades || guru.keyQuote) && (
+        <div className="rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+            <span className="text-[10px] font-extrabold tracking-widest uppercase text-slate-400">GURU PROFILE</span>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Meta badges */}
+            <div className="flex flex-wrap gap-2">
+              {guru.investmentStyle && (
+                <span className="px-3 py-1 rounded-full text-[11px] font-extrabold border" style={{ background: theme.accentSoft, color: theme.accent, borderColor: theme.accent + "30" }}>
+                  {guru.investmentStyle}
+                </span>
+              )}
+              {guru.aum && (
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                  AUM {guru.aum}
+                </span>
+              )}
+              {guru.foundingYear && (
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                  {guru.foundingYear}년 설립
+                </span>
+              )}
+            </div>
+
+            {/* Career background */}
+            {guru.background && (
+              <p className="text-[13px] leading-relaxed text-slate-700">{guru.background}</p>
+            )}
+
+            {/* Famous trades */}
+            {guru.famousTrades && guru.famousTrades.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-[10.5px] font-extrabold tracking-wider uppercase text-slate-400">대표 투자 이력</div>
+                <ul className="space-y-1.5">
+                  {guru.famousTrades.map((trade, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[12.5px] text-slate-600">
+                      <span className="mt-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0" style={{ background: theme.accent }}>
+                        {i + 1}
+                      </span>
+                      <span>{trade}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Key quote */}
+            {guru.keyQuote && (
+              <div className="rounded-xl p-4 border-l-4 bg-slate-50" style={{ borderColor: theme.accent }}>
+                <div className="text-[10px] font-extrabold tracking-wider uppercase mb-1.5" style={{ color: theme.accent }}>KEY QUOTE</div>
+                <p className="text-[13px] font-semibold italic text-slate-700 leading-relaxed">"{guru.keyQuote}"</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Fallback Essay for historical/inactive/no-action gurus */}
       {!report.hasChanges && report.essay && (

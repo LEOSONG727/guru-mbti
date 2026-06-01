@@ -73,7 +73,20 @@ const GURU_MAPPING = {
   'howard-marks': 'oc',
   'prem-watsa': 'FFH',
   'carl-icahn': 'ic',
-  'jeffrey-ubben': 'VA'
+  'jeffrey-ubben': 'VA',
+  'joel-greenblatt': 'GOTHAM',
+  'cathie-wood': 'ARK',
+  'ken-fisher': 'FI',
+  'ray-dalio': 'BD',
+  'stanley-druckenmiller': 'DUQ',
+  'george-soros': 'SFM',
+  'jeremy-grantham': 'GMO',
+  'paul-tudor-jones': 'TUDOR',
+  'meryl-witmer': 'EC',
+  'john-paulson': 'JPC',
+  'robert-karr': 'JOHO',
+  'mario-gabelli': 'MG',
+  'paul-singer': 'EL'
 };
 
 // Helper function to sleep (to avoid rate limits / blocks)

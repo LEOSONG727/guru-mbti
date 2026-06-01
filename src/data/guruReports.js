@@ -2825,6 +2825,80 @@ export const GURU_REPORTS = {
       }
     ],
   },
+  "paul-tudor-jones": {
+    hasChanges: true,
+    firm: "Tudor Investment Corp",
+    quarter: "2026년 1분기 13F",
+    filingDate: "2026.05.15",
+    teaserTicker: {
+      ticker: "GLD",
+      name: "SPDR Gold Shares",
+      weight: 12.8,
+      change: "추가 (+18%)",
+      reason: "지정학 불확실성 장기화 및 달러 약세 국면의 금 가격 상승 베팅"
+    },
+    premiumHoldings: [
+      { ticker: "SPY", name: "SPDR S&P 500 ETF", weight: 9.5, change: "유지", reason: "미국 경제 장기 성장성 추종 및 모멘텀 상승 추세 지속 판단" },
+      { ticker: "NVDA", name: "NVIDIA Corp. (엔비디아)", weight: 7.2, change: "추가 (+15%)", reason: "AI 반도체 수요 폭발적 증가와 강력한 상승 추세 모멘텀" },
+      { ticker: "BTC", name: "Bitcoin (비트코인 관련)", weight: 5.8, change: "유지", reason: "인플레이션 헤지 대체자산으로 200일 이동평균선 기준 강세 추세 유지" },
+      { ticker: "JPM", name: "JPMorgan Chase & Co.", weight: 4.5, change: "신규", reason: "금리 사이클 정점 통과 후 은행주 ROE 반등 추세 포착" },
+      { ticker: "XLE", name: "Energy Select Sector SPDR", weight: 3.8, change: "유지", reason: "에너지 가격 지정학 프리미엄 및 계절적 수요 상승 추세 유효" }
+    ],
+    sectorMix: [
+      { name: "원자재/금", value: 28, color: "#F59E0B" },
+      { name: "지수/ETF", value: 25, color: "#3F5BFF" },
+      { name: "테크/AI", value: 22, color: "#0EA5E9" },
+      { name: "금융", value: 15, color: "#10B981" },
+      { name: "에너지/기타", value: 10, color: "#94A3B8" }
+    ],
+    trendData: [35, 38, 32, 41, 45, 43, 48, 51, 47, 55, 58, 56],
+    bearCase: [
+      "지정학 위기 완화 및 실질금리 급등 시 금 보유 포지션 단기 급락 위험",
+      "AI 과열 밸류에이션 조정 시 테크 모멘텀 포지션 손실 확대 가능성",
+      "달러화 강세 반전 시 원자재·이머징 포지션 동시 압박 리스크"
+    ],
+    actionPlan: [
+      { title: "200일 이동평균선 기준 추세 모니터링", detail: "보유 종목 주가가 200일 MA 아래로 이탈 시 즉각 포지션 조절" },
+      { title: "매크로 인플레이션 헤지 비중 유지", detail: "금·원자재 비중 25% 이상 유지하며 인플레이션 리스크 대비" }
+    ]
+  },
+  "jeremy-grantham": {
+    hasChanges: true,
+    firm: "GMO LLC",
+    quarter: "2026년 1분기 13F",
+    filingDate: "2026.05.15",
+    teaserTicker: {
+      ticker: "VWO",
+      name: "Vanguard FTSE Emerging Markets ETF",
+      weight: 18.5,
+      change: "추가 (+22%)",
+      reason: "신흥국 주식 극단적 저평가 및 선진국 버블 대비 역사적 밸류에이션 갭 확대"
+    },
+    premiumHoldings: [
+      { ticker: "EEM", name: "iShares MSCI Emerging Markets ETF", weight: 14.2, change: "유지", reason: "신흥국 전반 저평가 지속 및 평균 회귀 잠재력 보유" },
+      { ticker: "GLD", name: "SPDR Gold Shares", weight: 10.5, change: "추가 (+8%)", reason: "미국 슈퍼버블 붕괴 대비 인플레이션·시스템 리스크 헤지" },
+      { ticker: "VEA", name: "Vanguard FTSE Developed Markets ETF", weight: 8.8, change: "유지", reason: "유럽·일본 주식 상대적 저평가 및 달러 약세 수혜 기대" },
+      { ticker: "VALE", name: "Vale S.A. (발레, 브라질 광산)", weight: 5.5, change: "추가 (+12%)", reason: "신흥국 원자재 기업 극단적 저평가 및 탈탄소 전환 소재 수요" },
+      { ticker: "IVV", name: "iShares Core S&P 500 ETF", weight: 4.2, change: "축소 (-15%)", reason: "미국 주식 역사적 고평가 구간, 버블 리스크에 따른 비중 축소" }
+    ],
+    sectorMix: [
+      { name: "신흥국 주식", value: 38, color: "#10B981" },
+      { name: "원자재/실물", value: 22, color: "#F59E0B" },
+      { name: "선진국 주식", value: 25, color: "#3F5BFF" },
+      { name: "미국 주식", value: 10, color: "#0EA5E9" },
+      { name: "기타 자산", value: 5, color: "#94A3B8" }
+    ],
+    trendData: [28, 30, 27, 32, 35, 33, 38, 36, 40, 42, 38, 44],
+    bearCase: [
+      "미국 주식 버블이 예상보다 더 오래 지속될 경우 신흥국 상대적 언더퍼폼 지속 위험",
+      "중국 경기 둔화 및 지정학 리스크로 신흥국 자산 전반 동반 약세 가능성",
+      "달러 강세 반전 시 신흥국 통화 자산 가치 추가 훼손 리스크"
+    ],
+    actionPlan: [
+      { title: "신흥국 밸류에이션 갭 모니터링", detail: "선진국 vs 신흥국 PBR 비율이 역사적 고점 근접 시 신흥국 비중 추가 확대" },
+      { title: "버블 지표 정기 점검", detail: "실러 PER, 케이프 비율 등 미국 주식 고평가 지표 분기별 확인 및 포지션 조절" }
+    ]
+  },
 };
 
 export function getGuruReport(guruId, dbGuru = null) {
