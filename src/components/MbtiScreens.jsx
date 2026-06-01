@@ -690,14 +690,36 @@ export function TestScreen({ onComplete, onBack, theme }) {
 // ─────────────────────────────────────────
 export function ResultScreen({ result, onContinue, theme }) {
   const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
   useEffect(() => { setRevealed(true); }, []);
 
   const consensus = GROUP_CONSENSUS[result.code] || GROUP_CONSENSUS.FCVS;
 
+  function copyText(t) {
+    navigator.clipboard?.writeText(t).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  async function handleShare() {
+    const text = `나는 ${result.name} (${result.code})\n롤모델: ${result.guruKr || '워렌 버핏'}\n\n"${result.tagline}"\n\n▶ GURU DNA로 내 투자 성향 진단하기`;
+    const url = window.location.origin;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `GURU DNA · ${result.name}`, text, url });
+      } catch (e) {
+        if (e.name !== 'AbortError') copyText(text + '\n' + url);
+      }
+    } else {
+      copyText(text + '\n' + url);
+    }
+  }
+
   return (
     <div className="w-full max-w-[1100px] mx-auto px-4 py-8 space-y-8">
       {/* Top title info */}
-      <div className="text-center space-y-1">
+      <div className="text-center space-y-3">
         <span className="text-[11px] font-extrabold tracking-widest uppercase" style={{ color: theme.accent }}>
           YOUR INVESTOR DNA TYPE · {result.code}
         </span>
@@ -707,6 +729,67 @@ export function ResultScreen({ result, onContinue, theme }) {
         <p className="text-[15.5px] md:text-[18px] font-semibold" style={{ color: theme.textMute }}>
           {result.tagline}
         </p>
+
+        {/* Share button */}
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-extrabold border-2 transition-all active:scale-[0.97]"
+            style={copied
+              ? { background: "#10B981", color: "#fff", borderColor: "#10B981" }
+              : { background: theme.accentSoft, color: theme.accent, borderColor: theme.accent + "40" }
+            }
+          >
+            <Icon name={copied ? "check" : "share-2"} size={14} />
+            <span>{copied ? "클립보드에 복사됨!" : "결과 공유하기"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Shareable visual card (screenshot-friendly) */}
+      <div
+        className="rounded-[28px] p-6 md:p-8 relative overflow-hidden border border-indigo-100 shadow-lg"
+        style={{ background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accent2} 100%)` }}
+      >
+        {/* Background decoration */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute -bottom-14 -left-8 w-52 h-52 rounded-full bg-white/5 pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row md:items-center gap-5">
+          {/* Left: GURU DNA branding + type */}
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black tracking-[0.2em] text-white/50 uppercase">GURU DNA LAB</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/15 text-white/80 tracking-wider uppercase">
+                {result.code}
+              </span>
+            </div>
+            <div>
+              <div className="text-white/70 text-[13px] font-semibold mb-0.5">나의 투자 DNA 유형</div>
+              <div className="text-white text-[26px] md:text-[30px] font-extrabold leading-tight tracking-tight">
+                {result.name}
+              </div>
+            </div>
+            <p className="text-white/75 text-[13px] leading-relaxed max-w-[380px]">
+              {result.tagline}
+            </p>
+          </div>
+
+          {/* Right: Guru match */}
+          <div className="flex flex-col items-start md:items-end gap-1.5 shrink-0">
+            <div className="text-white/50 text-[10px] font-extrabold tracking-widest uppercase">롤모델 거장</div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-3xl shrink-0">
+                {result.emoji}
+              </div>
+              <div>
+                <div className="text-white text-[18px] font-extrabold">{result.guruKr || "워렌 버핏"}</div>
+                <div className="text-white/60 text-[11px] font-medium">{result.guruFirm || "Berkshire Hathaway"}</div>
+              </div>
+            </div>
+            <div className="text-white/40 text-[10px] font-bold mt-1">guru-mbti.vercel.app</div>
+          </div>
+        </div>
       </div>
 
       {/* Main Grid */}
