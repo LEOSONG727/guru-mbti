@@ -1369,16 +1369,9 @@ export function ReportScreen({ result, onRestart, theme }) {
               <Icon name="crown" size={11} />
               <span>PREMIUM UNLOCKED</span>
             </span>
-            {dbData.isLive ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span>LIVE DB</span>
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-slate-100 text-slate-600 border border-slate-200">
-                OFFLINE MASTER
-              </span>
-            )}
+            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-slate-100 text-slate-600 border border-slate-200">
+              {consensus.quarterLabel || "2026 Q1"}
+            </span>
             <span className="text-[12px] text-slate-400">2026 Q1 공시 기준</span>
           </div>
           
@@ -2018,11 +2011,9 @@ export function GuruDetailReport({ guruId, theme }) {
           <div className="space-y-1 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">13F PORTFOLIO</span>
-              {dbReport.isLive && (
-                <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  LIVE DB
-                </span>
-              )}
+              <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-slate-100 text-slate-500 border border-slate-200/60">
+                {report?.quarter?.replace('년 ', ' Q')?.replace('분기 13F', '') || '2026 Q1'}
+              </span>
             </div>
             <h3 className="text-[18px] font-bold text-slate-800">
               {guru.nameKr} 포트폴리오
