@@ -57,7 +57,8 @@ export function Icon({ name, size = 20, className = "", strokeWidth = 2 }) {
     "smartphone": Icons.Smartphone,
     "share-2": Icons.Share2,
     "download": Icons.Download,
-    "search": Icons.Search
+    "search": Icons.Search,
+    "clock": Icons.Clock
   };
 
   const Comp = map[name] || Icons.HelpCircle;
@@ -467,15 +468,23 @@ export function LandingScreen({ onStart, theme }) {
             나와 매칭되는 글로벌 대가 집단의 실제 포트폴리오(13F)를 실시간 분석해 보세요.
           </p>
 
-          <div className={`pt-4 transition-all duration-700 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
-            <button 
-              onClick={onStart} 
+          <div className={`pt-4 space-y-3 transition-all duration-700 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+            <button
+              onClick={onStart}
               className="h-[56px] px-8 rounded-2xl text-[16px] font-extrabold text-white transition-all hover:scale-[1.01] hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-3 shadow-md"
               style={{ background: theme.accent }}
             >
               <span>나의 투자 본능 진단 시작</span>
               <Icon name="arrow-right" size={18} />
             </button>
+            {/* Trust micro-copy */}
+            <div className="flex items-center gap-3 text-[12px] font-semibold" style={{ color: theme.textMute }}>
+              <span className="flex items-center gap-1"><Icon name="clock" size={12} /> 2분 소요</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="flex items-center gap-1"><Icon name="lock" size={12} /> 이메일 불필요</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="flex items-center gap-1"><Icon name="zap" size={12} /> 무료</span>
+            </div>
           </div>
         </div>
 
@@ -563,6 +572,36 @@ export function LandingScreen({ onStart, theme }) {
             <p className="text-[13px] leading-relaxed" style={{ color: theme.textMute }}>{f.desc}</p>
           </div>
         ))}
+      </div>
+
+      {/* DNA Types Preview Strip */}
+      <div className="mt-16 md:mt-24 space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-extrabold tracking-widest uppercase" style={{ color: theme.accent }}>16 INVESTOR DNA TYPES</span>
+            <h3 className="text-[18px] md:text-[22px] font-extrabold mt-1" style={{ color: theme.textStrong }}>나는 어떤 투자 거장과 닮았을까?</h3>
+          </div>
+          <button onClick={onStart} className="hidden md:flex items-center gap-1.5 text-[13px] font-extrabold px-4 py-2 rounded-xl" style={{ background: theme.accentSoft, color: theme.accent }}>
+            지금 진단하기 <Icon name="arrow-right" size={13} />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Object.entries(TYPES).map(([code, type]) => (
+            <div key={code} className="p-4 rounded-2xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-sm transition-all cursor-default">
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="text-2xl">{type.emoji}</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg" style={{ background: theme.accentSoft, color: theme.accent }}>{code}</span>
+              </div>
+              <div className="text-[12.5px] font-bold leading-tight mb-1" style={{ color: theme.textStrong }}>{type.name}</div>
+              <div className="text-[11px]" style={{ color: theme.textMute }}>{type.guruKr}</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center pt-2">
+          <button onClick={onStart} className="flex items-center gap-2 h-[48px] px-7 rounded-2xl text-[15px] font-extrabold text-white shadow-md hover:scale-[1.01] transition-all" style={{ background: theme.accent }}>
+            내 유형 찾기 <Icon name="arrow-right" size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1496,6 +1535,9 @@ export function ReportScreen({ result, onRestart, theme }) {
         </div>
       </div>
 
+      {/* All Gurus Explorer */}
+      <AllGurusExplorer selectedGuru={selectedGuru} onSelectGuru={setSelectedGuru} theme={theme} currentCode={result.code} />
+
       {/* mind-dot CTA Banner */}
       <div className="rounded-[28px] overflow-hidden border border-indigo-200/40 shadow-sm"
         style={{ background: `linear-gradient(135deg, ${theme.accentSoft}, #f0f4ff)` }}>
@@ -1532,6 +1574,121 @@ export function ReportScreen({ result, onRestart, theme }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ALL GURUS EXPLORER
+// ─────────────────────────────────────────
+const STYLE_LABELS = {
+  FCVS: "냉철한 가치", FDVS: "분산 가치", TCVS: "역발상 성장", TDVS: "가치 성장",
+  FCGS: "추세 가치", FDGS: "데이터 가치", TCGS: "성장 모멘텀", TDGS: "모멘텀",
+  MCVS: "거시 역발상", MDVS: "거시 분산", MCGS: "거시 집중", MDGS: "거시 성장",
+  MCGD: "모멘텀 가치", MDGD: "글로벌 가치", TCGD: "테마 집중", TDGD: "글로벌 분산",
+};
+
+function AllGurusExplorer({ selectedGuru, onSelectGuru, theme, currentCode }) {
+  const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = GURUS_LIST.filter(g =>
+    !search ||
+    g.nameKr.toLowerCase().includes(search.toLowerCase()) ||
+    g.nameEn.toLowerCase().includes(search.toLowerCase()) ||
+    (g.firm || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Group by mbtiType
+  const grouped = {};
+  filtered.forEach(g => {
+    if (!grouped[g.mbtiType]) grouped[g.mbtiType] = [];
+    grouped[g.mbtiType].push(g);
+  });
+
+  return (
+    <div className="rounded-[28px] border border-slate-100 shadow-sm bg-white overflow-hidden">
+      {/* Header toggle */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-6 md:px-8 py-5 text-left hover:bg-slate-50/60 transition-colors"
+      >
+        <div className="space-y-1">
+          <span className="text-[10px] font-extrabold tracking-widest uppercase" style={{ color: theme.accent }}>GURU EXPLORER</span>
+          <h3 className="text-[18px] font-extrabold" style={{ color: theme.textStrong }}>
+            전체 {GURUS_LIST.length}인 거장 탐색
+          </h3>
+          <p className="text-[12.5px]" style={{ color: theme.textMute }}>
+            모든 투자 유형의 거장 13F 리포트를 직접 열람할 수 있습니다.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="hidden sm:inline-flex px-3 py-1 rounded-full text-[11px] font-bold" style={{ background: theme.accentSoft, color: theme.accent }}>
+            {GURUS_LIST.length}인 전체 공개
+          </span>
+          <Icon name={expanded ? "chevron-up" : "chevron-down"} size={20} className="text-slate-400" />
+        </div>
+      </button>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div className="border-t border-slate-100 px-6 md:px-8 pb-6 space-y-5 pt-5">
+          {/* Search bar */}
+          <div className="relative">
+            <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="이름, 회사명으로 검색..."
+              className="w-full h-[40px] pl-9 pr-4 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 bg-slate-50"
+              style={{ "--tw-ring-color": theme.accent + "40" }}
+            />
+          </div>
+
+          {/* Grouped by type */}
+          {Object.entries(grouped).map(([code, gurus]) => (
+            <div key={code} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg" style={{ background: code === currentCode ? theme.accent : theme.accentSoft, color: code === currentCode ? "#fff" : theme.accent }}>
+                  {code}
+                </span>
+                <span className="text-[12px] font-bold text-slate-500">{STYLE_LABELS[code] || code}</span>
+                {code === currentCode && <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">내 유형</span>}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {gurus.map(g => (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      onSelectGuru(selectedGuru === g.id ? null : g.id);
+                      // Scroll to selected guru report if needed
+                      setTimeout(() => {
+                        document.getElementById("guru-detail-report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 100);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold border transition-all active:scale-[0.97]"
+                    style={selectedGuru === g.id
+                      ? { background: theme.accent, color: "#fff", borderColor: theme.accent }
+                      : { background: "#fff", color: theme.textStrong, borderColor: "rgba(226,232,240,0.8)" }
+                    }
+                  >
+                    <span className="text-sm">{g.emoji}</span>
+                    <span>{g.nameKr}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Selected guru detail rendered here too */}
+          {selectedGuru && (
+            <div id="guru-detail-report" className="mt-4 transition-all animate-slide-in-right">
+              <GuruDetailReport guruId={selectedGuru} theme={theme} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1773,13 +1930,21 @@ export function GuruDetailReport({ guruId, theme }) {
           </h3>
           <p className="text-[12px] text-slate-400 flex flex-wrap gap-x-2 gap-y-1 items-center">
             <span>공시일: {report.filingDate}</span>
-            <span className="text-slate-200 dark:text-slate-700">·</span>
+            <span className="text-slate-200">·</span>
             <span>기준: {report.quarter}</span>
-            <span className="text-slate-200 dark:text-slate-700">·</span>
+            <span className="text-slate-200">·</span>
             <span>
-              운용규모: <span className="font-semibold text-slate-600 dark:text-slate-300">{guru.aum || formatAUM(aum)}</span>
+              운용규모: <span className="font-semibold text-slate-600">{guru.aum || formatAUM(aum)}</span>
             </span>
           </p>
+          <div className="flex items-center gap-2 pt-0.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
+              <Icon name="shield-check" size={9} strokeWidth={2.5} /> SEC 13F 공시
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
+              출처: Dataroma.com
+            </span>
+          </div>
         </div>
         <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shrink-0">
           📊
@@ -1874,7 +2039,35 @@ export function GuruDetailReport({ guruId, theme }) {
       {/* Dataroma style data table */}
       <div className="space-y-3">
         <h4 className="text-[12.5px] font-bold text-slate-400 uppercase tracking-wide">포트폴리오 보유 종목 (Holdings)</h4>
-        <div className="relative">
+        {/* Mobile card layout (< md) */}
+        <div className={`md:hidden space-y-2 relative ${!isExpanded && processedHoldings.length > 10 ? "max-h-[420px] overflow-hidden" : ""}`}>
+          {displayedHoldings.map((h, idx) => {
+            const actText = formatActivity(h.changeType, h.changePercent);
+            const activityBadge = renderActivityBadge(actText);
+            return (
+              <div key={idx} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <div className="w-5 text-center text-[11px] font-extrabold text-slate-300 shrink-0">{idx + 1}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-extrabold text-[12px] text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/50 shrink-0">{h.ticker}</span>
+                    {h.isTeaser && <span className="text-[9px] bg-indigo-600 text-white font-black px-1.5 py-0.5 rounded uppercase shrink-0">Premium</span>}
+                  </div>
+                  <div className="text-[12px] font-semibold text-slate-600 truncate">{h.name}</div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="font-black text-[14px] text-slate-800 tabular-nums">{h.weight.toFixed(2)}%</div>
+                  {activityBadge}
+                </div>
+              </div>
+            );
+          })}
+          {!isExpanded && processedHoldings.length > 10 && (
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none" />
+          )}
+        </div>
+
+        {/* Desktop table layout (>= md) */}
+        <div className="relative hidden md:block">
           <div className={`overflow-x-auto rounded-2xl border border-slate-200/80 shadow-sm bg-white transition-all duration-300 ${!isExpanded && processedHoldings.length > 10 ? "max-h-[380px] overflow-hidden" : isExpanded && processedHoldings.length > 10 ? "max-h-[480px] overflow-y-auto" : ""}`}>
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10">
@@ -1944,6 +2137,16 @@ export function GuruDetailReport({ guruId, theme }) {
             </button>
           </div>
         )}
+
+        {/* Data disclaimer */}
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+          <Icon name="info" size={12} className="text-slate-400 mt-0.5 shrink-0" />
+          <p className="text-[10.5px] leading-relaxed text-slate-400">
+            본 데이터는 SEC 13F 의무 공시(분기별) 기준이며, 실제 포트폴리오와 최대 45일 차이가 있을 수 있습니다.
+            투자 결정의 최종 책임은 투자자 본인에게 있습니다.
+            출처: <a href="https://www.dataroma.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">Dataroma.com</a> · SEC EDGAR
+          </p>
+        </div>
       </div>
 
       {/* Sector mix donut chart */}
