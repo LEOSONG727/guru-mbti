@@ -10,7 +10,7 @@ import {
   StylesScreen,
   Live13fScreen
 } from "./components/MbtiScreens";
-import { calculateType } from "./data/mbtiData";
+import { calculateType, TYPES } from "./data/mbtiData";
 import { supabase, isSupabaseConfigured, fallbackAuth } from "./utils/supabase";
 
 // Brand theme: Premium Fintech Indigo & Deep Slate
@@ -33,7 +33,8 @@ function App() {
   const [screen, setScreen] = useState("landing"); // landing | test | result | auth | report | about | styles | live13f
   const [answers, setAnswers] = useState(null);
   const [resultCode, setResultCode] = useState(() => {
-    return localStorage.getItem("guru_mbti_temp_result") || null;
+    return localStorage.getItem("guru_mbti_result") ||
+           localStorage.getItem("guru_mbti_temp_result") || null;
   });
   const [user, setUser] = useState(null);
 
@@ -96,8 +97,9 @@ function App() {
     const calculated = calculateType(ans);
     setResultCode(calculated.code);
     
-    // Save to localStorage temporarily in case of OAuth redirect reloads
+    // Save to localStorage (both keys: temp for OAuth redirect, persistent for refresh)
     localStorage.setItem("guru_mbti_temp_result", calculated.code);
+    localStorage.setItem("guru_mbti_result", calculated.code);
     
     // Auto-update profile with type if logged in
     if (user) {
@@ -157,10 +159,13 @@ function App() {
     setAnswers(null);
     setResultCode(null);
     localStorage.removeItem("guru_mbti_temp_result");
+    localStorage.removeItem("guru_mbti_result");
   }
 
-  // Pre-calculate current result block in case of straight routing or refreshes
-  const activeResult = calculateType(answers || Array(12).fill("a"));
+  // Pre-calculate current result: prefer saved resultCode over re-computing from answers
+  const activeResult = (resultCode && TYPES[resultCode])
+    ? { code: resultCode, scores: {}, ...TYPES[resultCode] }
+    : calculateType(answers || Array(12).fill("a"));
 
   // Unified responsive router mapping
   const screenComponents = {

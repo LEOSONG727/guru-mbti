@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as Icons from "lucide-react";
 import { QUESTIONS, TYPES, calculateType } from "../data/mbtiData";
 import { GURUS_LIST } from "../data/gurusList";
@@ -63,6 +63,61 @@ export function Icon({ name, size = 20, className = "", strokeWidth = 2 }) {
 
   const Comp = map[name] || Icons.HelpCircle;
   return <Comp size={size} className={className} strokeWidth={strokeWidth} />;
+}
+
+// ─────────────────────────────────────────
+// GURU AVATAR (Wikipedia API + initials fallback)
+// ─────────────────────────────────────────
+const _wikiCache = {};
+export function GuruAvatar({ guru, size = 48, className = "" }) {
+  const [imgUrl, setImgUrl] = useState(guru?.photoUrl || null);
+  const [failed, setFailed] = useState(false);
+  const nameEn = guru?.nameEn || "";
+
+  useEffect(() => {
+    if (!nameEn || imgUrl || failed) return;
+    if (_wikiCache[nameEn]) {
+      if (_wikiCache[nameEn] === "FAILED") setFailed(true);
+      else setImgUrl(_wikiCache[nameEn]);
+      return;
+    }
+    const title = encodeURIComponent(nameEn);
+    fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${title}&prop=pageimages&pithumbsize=200&format=json&origin=*`)
+      .then(r => r.json())
+      .then(data => {
+        const pages = data.query?.pages;
+        const page = pages && Object.values(pages)[0];
+        const url = page?.thumbnail?.source;
+        if (url) { _wikiCache[nameEn] = url; setImgUrl(url); }
+        else { _wikiCache[nameEn] = "FAILED"; setFailed(true); }
+      })
+      .catch(() => { _wikiCache[nameEn] = "FAILED"; setFailed(true); });
+  }, [nameEn]);
+
+  const initials = (guru?.nameKr || guru?.nameEn || "?")[0];
+  const colors = ["#4F46E5","#7C3AED","#0891B2","#059669","#DC2626","#D97706","#7C3AED","#BE185D"];
+  const colorIdx = nameEn.charCodeAt(0) % colors.length;
+  const bg = colors[colorIdx];
+
+  if (imgUrl && !failed) {
+    return (
+      <img
+        src={imgUrl}
+        alt={guru?.nameKr || nameEn}
+        className={`object-cover object-top ${className}`}
+        style={{ width: size, height: size, borderRadius: "50%" }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <div
+      className={`flex items-center justify-center font-extrabold text-white shrink-0 ${className}`}
+      style={{ width: size, height: size, borderRadius: "50%", background: bg, fontSize: Math.floor(size * 0.38) }}
+    >
+      {initials}
+    </div>
+  );
 }
 
 function axisLabel(axis) {
@@ -730,6 +785,8 @@ export function TestScreen({ onComplete, onBack, theme }) {
 export function ResultScreen({ result, onContinue, theme }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const shareCardRef = useRef(null);
   useEffect(() => { setRevealed(true); }, []);
 
   const consensus = GROUP_CONSENSUS[result.code] || GROUP_CONSENSUS.FCVS;
@@ -755,6 +812,27 @@ export function ResultScreen({ result, onContinue, theme }) {
     }
   }
 
+  async function handleSaveImage() {
+    if (!shareCardRef.current || saving) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `guru-dna-${result.code}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (e) {
+      console.error("Image save failed:", e);
+    }
+    setSaving(false);
+  }
+
   return (
     <div className="w-full max-w-[1100px] mx-auto px-4 py-8 space-y-8">
       {/* Top title info */}
@@ -770,7 +848,7 @@ export function ResultScreen({ result, onContinue, theme }) {
         </p>
 
         {/* Share button */}
-        <div className="flex items-center justify-center gap-3 pt-1">
+        <div className="flex items-center justify-center gap-2.5 pt-1 flex-wrap">
           <button
             onClick={handleShare}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-extrabold border-2 transition-all active:scale-[0.97]"
@@ -782,11 +860,21 @@ export function ResultScreen({ result, onContinue, theme }) {
             <Icon name={copied ? "check" : "share-2"} size={14} />
             <span>{copied ? "클립보드에 복사됨!" : "결과 공유하기"}</span>
           </button>
+          <button
+            onClick={handleSaveImage}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-extrabold border-2 transition-all active:scale-[0.97] disabled:opacity-60"
+            style={{ background: theme.accentSoft, color: theme.accent, borderColor: theme.accent + "40" }}
+          >
+            <Icon name="download" size={14} />
+            <span>{saving ? "저장 중..." : "이미지 저장"}</span>
+          </button>
         </div>
       </div>
 
       {/* Shareable visual card (screenshot-friendly) */}
       <div
+        ref={shareCardRef}
         className="rounded-[28px] p-6 md:p-8 relative overflow-hidden border border-indigo-100 shadow-lg"
         style={{ background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accent2} 100%)` }}
       >
@@ -996,25 +1084,28 @@ export function ResultScreen({ result, onContinue, theme }) {
                 </div>
               </div>
 
-              {/* Primary CTA: mind-dot */}
+              {/* Primary CTA: internal auth → report */}
+              <button
+                onClick={onContinue}
+                className="w-full h-[52px] rounded-xl font-extrabold text-[15px] transition-all hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
+                style={{ background: theme.accent, color: "#fff" }}
+              >
+                <Icon name="lock" size={16} />
+                <span>전체 리포트 무료로 보기</span>
+                <Icon name="arrow-right" size={16} />
+              </button>
+
+              {/* Secondary: mind-dot */}
               <a
                 href={import.meta.env.VITE_MIND_DOT_URL || "https://mind-dot.vercel.app"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full h-[52px] rounded-xl font-extrabold text-[15px] transition-all hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
-                style={{ background: theme.accent, color: "#fff" }}
+                className="w-full text-center text-[12px] transition flex items-center justify-center gap-1"
+                style={{ color: theme.accentLite || "#818CF8" }}
               >
-                <span>마인드닷(Mind-Dot) 무료 가입하기</span>
-                <Icon name="arrow-right" size={16} />
+                <Icon name="external-link" size={11} />
+                마인드닷(Mind-Dot)으로 이동
               </a>
-
-              {/* Secondary: internal auth */}
-              <button
-                onClick={onContinue}
-                className="w-full text-center text-[12px] text-slate-400 hover:text-slate-200 transition underline underline-offset-2"
-              >
-                이미 사이트 계정이 있으신가요? 로그인
-              </button>
             </div>
           </div>
 
@@ -1502,20 +1593,23 @@ export function ReportScreen({ result, onRestart, theme }) {
             {/* Interactive Grid List */}
             <div className="grid grid-cols-2 gap-3">
               {groupGurus.map((guru) => (
-                <button 
-                  key={guru.id} 
+                <button
+                  key={guru.id}
                   onClick={() => setSelectedGuru(selectedGuru === guru.id ? null : guru.id)}
-                  className="p-4 rounded-2xl border text-left transition active:scale-[0.98] flex flex-col justify-between min-h-[100px]"
-                  style={{ 
+                  className="p-4 rounded-2xl border text-left transition active:scale-[0.98] space-y-3"
+                  style={{
                     background: selectedGuru === guru.id ? theme.accentSoft : theme.surface,
                     borderColor: selectedGuru === guru.id ? theme.accent : "rgba(226, 232, 240, 0.6)",
                   }}
                 >
-                  <div>
-                    <div className="text-[13px] font-bold text-slate-800">{guru.nameKr}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{guru.firmName}</div>
+                  <div className="flex items-center gap-2.5">
+                    <GuruAvatar guru={guru} size={36} />
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-bold text-slate-800 truncate">{guru.nameKr}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{guru.firmName}</div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between w-full mt-3">
+                  <div className="flex items-center justify-between w-full">
                     <span className="text-[9px] font-black px-1.5 py-0.5 rounded text-white" style={{ background: theme.accent }}>
                       13F
                     </span>
@@ -1915,39 +2009,42 @@ export function GuruDetailReport({ guruId, theme }) {
     <div className="rounded-3xl p-6 md:p-8 border border-slate-100 shadow-xl space-y-6 bg-white">
       
       {/* Bio Meta Header */}
-      <div className="flex justify-between items-start">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">13F PORTFOLIO</span>
-            {dbReport.isLive && (
-              <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                LIVE DB
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Guru avatar */}
+          <div className="shrink-0 ring-2 ring-offset-2" style={{ borderRadius: "50%", ringColor: theme.accentSoft }}>
+            <GuruAvatar guru={guru} size={56} />
+          </div>
+          <div className="space-y-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">13F PORTFOLIO</span>
+              {dbReport.isLive && (
+                <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  LIVE DB
+                </span>
+              )}
+            </div>
+            <h3 className="text-[18px] font-bold text-slate-800">
+              {guru.nameKr} 포트폴리오
+            </h3>
+            <p className="text-[12px] text-slate-400 flex flex-wrap gap-x-2 gap-y-1 items-center">
+              <span>공시일: {report.filingDate}</span>
+              <span className="text-slate-200">·</span>
+              <span>기준: {report.quarter}</span>
+              <span className="text-slate-200">·</span>
+              <span>
+                운용규모: <span className="font-semibold text-slate-600">{guru.aum || formatAUM(aum)}</span>
               </span>
-            )}
+            </p>
+            <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
+                <Icon name="shield-check" size={9} strokeWidth={2.5} /> SEC 13F 공시
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
+                출처: Dataroma.com
+              </span>
+            </div>
           </div>
-          <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-100">
-            {guru.nameKr} 포트폴리오
-          </h3>
-          <p className="text-[12px] text-slate-400 flex flex-wrap gap-x-2 gap-y-1 items-center">
-            <span>공시일: {report.filingDate}</span>
-            <span className="text-slate-200">·</span>
-            <span>기준: {report.quarter}</span>
-            <span className="text-slate-200">·</span>
-            <span>
-              운용규모: <span className="font-semibold text-slate-600">{guru.aum || formatAUM(aum)}</span>
-            </span>
-          </p>
-          <div className="flex items-center gap-2 pt-0.5">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
-              <Icon name="shield-check" size={9} strokeWidth={2.5} /> SEC 13F 공시
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60">
-              출처: Dataroma.com
-            </span>
-          </div>
-        </div>
-        <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shrink-0">
-          📊
         </div>
       </div>
 
