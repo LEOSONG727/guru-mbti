@@ -1208,6 +1208,16 @@ export function ReportScreen({ result, onRestart, theme }) {
         <div className="lg:col-span-7 space-y-6">
           <div className="rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6 bg-white">
             
+            {/* Key Thesis */}
+            {consensus.keyThesis && (
+              <div className="rounded-2xl px-5 py-4 border-l-4" style={{ background: theme.accentSoft, borderColor: theme.accent }}>
+                <span className="text-[10px] font-extrabold tracking-widest uppercase mb-1 block" style={{ color: theme.accent }}>INVESTMENT THESIS</span>
+                <p className="text-[14px] font-bold leading-relaxed" style={{ color: theme.textStrong }}>
+                  "{consensus.keyThesis}"
+                </p>
+              </div>
+            )}
+
             {/* Summary */}
             <div className="space-y-1.5">
               <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider">집단 요약 (Executive Summary)</h3>
@@ -1234,20 +1244,57 @@ export function ReportScreen({ result, onRestart, theme }) {
               </div>
             </div>
 
+            {/* Quarterly Highlight */}
+            {consensus.quarterlyHighlight && (
+              <div className="border-t pt-5 space-y-2">
+                <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider">이번 분기 주목 액션</h3>
+                <div className="p-4 rounded-2xl flex items-center gap-4 border-2" style={{ borderColor: theme.accent, background: theme.accentSoft }}>
+                  <div className="w-12 h-12 rounded-xl text-white flex items-center justify-center font-extrabold text-[12px] shrink-0" style={{ background: theme.accent }}>
+                    {consensus.quarterlyHighlight.ticker}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full text-white" style={{ background: theme.accent }}>
+                        {consensus.quarterlyHighlight.action}
+                      </span>
+                      <span className="text-[11px] text-slate-400">{consensus.quarterlyHighlight.guruName}</span>
+                    </div>
+                    <p className="text-[12.5px] leading-relaxed" style={{ color: theme.textStrong }}>
+                      {consensus.quarterlyHighlight.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Top overlapping list */}
             <div className="border-t pt-5 space-y-3">
               <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-2">공동 오버랩 매집 자산</h3>
               <div className="space-y-3">
                 {consensus.overlappingHoldings?.map((h, i) => (
-                  <div key={h.ticker} className="p-4 rounded-2xl flex items-center gap-4 border border-slate-100 bg-slate-50">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-[13px] shrink-0">
-                      {h.ticker}
+                  <div key={h.ticker} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-[12px] shrink-0">
+                        {h.ticker}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13.5px] font-bold text-slate-900">{h.name}</span>
+                          {h.guruCount && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">
+                              {h.guruCount}명 보유
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11.5px] text-slate-400">{h.description}</div>
+                      </div>
+                      {renderActivityBadge(h.change)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13.5px] font-bold text-slate-900">{h.name}</div>
-                      <div className="text-[11.5px] text-slate-400 truncate">{h.description}</div>
-                    </div>
-                    {renderActivityBadge(h.change)}
+                    {h.why && (
+                      <div className="pl-13 ml-[52px] text-[12px] leading-relaxed italic border-l-2 pl-3" style={{ color: theme.accent, borderColor: theme.accent }}>
+                        {h.why}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1271,7 +1318,14 @@ export function ReportScreen({ result, onRestart, theme }) {
                     <div key={idx} className="flex items-center gap-2 text-[12px]">
                       <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color }}></div>
                       <span className="text-slate-600 truncate">{s.name}</span>
-                      <span className="font-bold tabular-nums text-slate-900 ml-auto">{s.value}%</span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <span className="font-bold tabular-nums text-slate-900">{s.value}%</span>
+                        {s.delta !== undefined && s.delta !== 0 && (
+                          <span className={`text-[10px] font-bold ${s.delta > 0 ? "text-emerald-500" : "text-red-400"}`}>
+                            {s.delta > 0 ? `+${s.delta}` : s.delta}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
