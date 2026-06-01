@@ -30,7 +30,10 @@ const BRAND_THEME = {
 
 function App() {
   // App routing state
-  const [screen, setScreen] = useState("landing"); // landing | test | result | auth | report | about | styles | live13f
+  const [screen, setScreen] = useState(() => {
+    const saved = localStorage.getItem("guru_mbti_result") || localStorage.getItem("guru_mbti_temp_result");
+    return saved ? "result" : "landing";
+  }); // landing | test | result | auth | report | about | styles | live13f
   const [answers, setAnswers] = useState(null);
   const [resultCode, setResultCode] = useState(() => {
     return localStorage.getItem("guru_mbti_result") ||
